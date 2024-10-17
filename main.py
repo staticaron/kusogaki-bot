@@ -1,6 +1,7 @@
 from discord.ext import commands
 from discord import Intents
 from discord import Message
+from os import listdir
 
 from config import TOKEN
 
@@ -12,19 +13,17 @@ class Kusogaki(commands.AutoShardedBot):
     
     def __init__(self) -> None:
         super().__init__( command_prefix="kuso ", intents=intents, help_command=None )
+            
+    async def load_cogs(self):
+        for file in listdir("cogs"):
+            if file.endswith(".py"):
+                await self.load_extension(f"cogs.{file[:-3]}")
         
+    async def setup_hook(self):
+        await self.load_cogs()
+            
     async def on_ready(self):
         print("Logged in as " + self.user.name)
-        
-    async def on_message(self, message:Message):
-        if message.author.id == self.user.id:
-            return
-        
-        await message.channel.send( f"**Latency : ** {round(self.latency * 1000, 2)}ms")
-        
-    @commands.hybrid_command(name="ping", aliases=["hello"], description="Bot Latency", usage="pong")
-    async def ping(self, ctx: commands.Context):
-        await ctx.send( f"**Latency : ** {self.latency}")
         
 bot = Kusogaki()
 bot.run(TOKEN)

@@ -1,0 +1,9 @@
+name: Bug Report
+description: Report a bug found while using the Kusogaki bot
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description and reproduction of the issue
+    validations:
+      required: true

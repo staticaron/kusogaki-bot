@@ -1,9 +1,8 @@
-from discord.ext import commands
-from discord import Intents
-from discord import Message
 from os import listdir
 
 from config import TOKEN
+from discord import Intents
+from discord.ext import commands
 
 intents = Intents.default()
 intents.message_content = True

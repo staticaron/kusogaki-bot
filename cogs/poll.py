@@ -1,9 +1,10 @@
-from datetime import timedelta
-import discord
-from discord.ext import commands
 import asyncio
 import logging
-from typing import Dict, Tuple, Optional
+from datetime import timedelta
+from typing import Dict, Tuple
+
+import discord
+from discord.ext import commands
 
 logging.basicConfig(level=logging.DEBUG)
 

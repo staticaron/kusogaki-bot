@@ -158,3 +158,6 @@ pickle/
 config.json
 
 *.out
+
+# ruff
+.ruff_cache/

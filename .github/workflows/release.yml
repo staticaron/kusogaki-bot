@@ -1,0 +1,8 @@
+name: Create Release
+on:
+  workflow_dispatch:
+jobs:
+  create-release:
+    uses: kusogaki-events/actions-workflows/.github/workflows/release.yml@main
+    with:
+      fetch-depth: 0

@@ -5,4 +5,6 @@ on:
   pull_request:
 jobs:
   call-python-ci:
-    uses: kusogaki-events/actions-workflows/.github/workflows/release.yml@main
+    uses: kusogaki-events/actions-workflows/.github/workflows/py-ci.yml@main
+    with:
+      python-version: '3.12'

@@ -11,17 +11,17 @@ class EmbedType(Enum):
     WARNING = 2, 
     ERROR = 3
 
-async def get_embed(_type: EmbedType, _title: str, _description: str, _thumbnail: bool):
+async def get_embed(type: EmbedType, title: str, description: str, thumbnail: bool = False):
     
-    embd = Embed(title=_title, description=_description, timestamp=datetime.now())
+    embd = Embed(title=title, description=description, timestamp=datetime.now())
     
-    if _type is EmbedType.NORMAL:
+    if type is EmbedType.NORMAL:
         embd.color = NORMAL_COLOR
-    elif _type is EmbedType.INFORMATION:
+    elif type is EmbedType.INFORMATION:
         embd.color = INFORMATION_COLOR
-    elif _type is EmbedType.WARNING:
+    elif type is EmbedType.WARNING:
         embd.color = WARNING_COLOR
-    elif _type is EmbedType.ERROR:
+    elif type is EmbedType.ERROR:
         embd.color = ERROR_COLOR
         
     return embd

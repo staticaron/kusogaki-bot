@@ -6,11 +6,16 @@ from config import LOG_CHANNEL_ID
 
 class SuggestionCog(commands.Cog):
 
-    @commands.hybrid_command(name="suggest", description="Suggest something to the Moderators.")
-    async def suggest(self, ctx: commands.Context, suggestion: str):
+    bot: commands.Bot = None
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    @commands.command(name="suggest", description="Suggest something to the Moderators.")
+    async def suggest(self, ctx: commands.Context, *suggestion):
         channel: TextChannel = self.bot.get_channel(int(LOG_CHANNEL_ID))
         
-        embd: Embed = get_embed(EmbedType.NORMAL, "Suggestion Received", suggestion, False)
+        embd: Embed = await get_embed(EmbedType.NORMAL, "Suggestion Received", " ".join(suggestion), False)
         embd.add_field(
             name = "User",
             value = ctx.author.mention
@@ -18,5 +23,5 @@ class SuggestionCog(commands.Cog):
         
         await channel.send(embed=embd)
 
-def setup(bot: commands.Bot):
-    bot.add_cog(SuggestionCog())
+async def setup(bot: commands.Bot):
+    await bot.add_cog(SuggestionCog(bot))

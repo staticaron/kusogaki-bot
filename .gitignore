@@ -161,3 +161,6 @@ config.json
 
 # ruff
 .ruff_cache/
+
+# reminders command
+reminders.json

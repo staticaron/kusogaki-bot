@@ -1,10 +1,11 @@
 [tool.poetry]
-name = "kusogaki-bot"
+name = "kusogaki_bot"
 version = "0.1.0"
 description = "A discord bot for the Kusogaki discord server"
 authors = ["Kusogaki"]
 license = "GPL-3.0-or-later"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -16,23 +17,27 @@ python-dotenv = "^1.0.1"
 ruff = "^0.7.0"
 pre-commit = "^4.0.1"
 
+[tool.poetry.scripts]
+lint = "scripts.ruff:lint"
+format = "scripts.ruff:format"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.ruff]
-select = ["F", "E", "I"]
-ignore = ["E501"]
-src = ["src"]
 
 [tool.ruff.format]
 quote-style = "single"
 line-ending = "auto"
 
+[tool.ruff.lint]
+select = ["F", "E", "I"]
+ignore = ["E501"]
+
 [tool.ruff.isort]
 known-first-party = ["kusogaki-bot"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 combine-as-imports = true
+
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]

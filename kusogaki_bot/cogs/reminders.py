@@ -18,7 +18,7 @@ class ReminderError(Exception):
 class Reminders(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.reminders: Dict[str, List[Dict]] = {}  # user_id: [{reminder data}]
+        self.reminders: Dict[str, List[Dict]] = {}
         self.check_reminders.start()
         self.load_reminders()
 
@@ -56,7 +56,7 @@ class Reminders(commands.Cog):
     async def _process_user_reminders(self, user_id: str, current_time: float) -> None:
         """Process all reminders for a specific user."""
         user_reminders = self.reminders[user_id]
-        for reminder in user_reminders[:]:  # Create a copy to iterate over
+        for reminder in user_reminders[:]:
             if current_time >= reminder['time']:
                 await self._send_reminder(user_id, reminder)
                 user_reminders.remove(reminder)
@@ -222,7 +222,7 @@ class Reminders(commands.Cog):
             raise ReminderError('You have no active reminders!')
 
         try:
-            index = index - 1  # Convert to 0-based index
+            index = index - 1
             if 0 <= index < len(user_reminders):
                 user_reminders.pop(index)
                 if not user_reminders:

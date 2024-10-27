@@ -7,9 +7,10 @@ from discord.ext import commands, tasks
 
 from kusogaki_bot.data.reminder_repository import ReminderRepository
 from kusogaki_bot.services.reminder_service import ReminderError, ReminderService
+from kusogaki_bot.utils.base_cog import BaseCog
 
 
-class RemindersCog(commands.Cog):
+class RemindersCog(BaseCog):
     """Cog for reminder-related commands."""
 
     def __init__(self, bot: commands.Bot):

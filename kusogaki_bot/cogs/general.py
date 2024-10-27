@@ -1,7 +1,9 @@
 from discord.ext import commands
 
+from kusogaki_bot.utils.base_cog import BaseCog
 
-class GeneralCog(commands.Cog):
+
+class GeneralCog(BaseCog):
     bot: commands.Bot = None
 
     def __init__(self, bot: commands.Bot):

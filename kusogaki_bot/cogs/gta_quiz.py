@@ -6,11 +6,12 @@ from discord.ext import commands
 
 from kusogaki_bot.services.game_message_service import GameMessageService
 from kusogaki_bot.services.gta_quiz_service import GTAQuizService
+from kusogaki_bot.utils.base_cog import BaseCog
 
 logger = logging.getLogger(__name__)
 
 
-class GTAQuizCog(commands.Cog):
+class GTAQuizCog(BaseCog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.quiz_service = GTAQuizService()

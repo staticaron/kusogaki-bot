@@ -4,9 +4,11 @@ import logging
 from discord.ext import commands
 
 from kusogaki_bot.services.poll_service import PollError, PollService
+from kusogaki_bot.utils.base_cog import BaseCog
+from kusogaki_bot.utils.permissions import has_required_permission
 
 
-class PollCog(commands.Cog):
+class PollCog(BaseCog):
     """Cog for poll-related commands."""
 
     def __init__(self, bot: commands.Bot):
@@ -14,6 +16,7 @@ class PollCog(commands.Cog):
         self.poll_service = PollService()
 
     @commands.command(name='poll', description='Create a new poll')
+    @has_required_permission()
     async def create_poll(
         self,
         ctx: commands.Context,

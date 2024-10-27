@@ -1,9 +1,12 @@
-<h3  align="center">
-    <img src="https://i.imgur.com/HvJVv41.png" style="width : 180px; height : auto;" />
-</h3>
+![](./static/githubbanner.jpg)
+<br />
 
-<h1 align="center"> Kusogaki Bot </h1>
+<h2> Bug report or Feature request </h2>
 
-<p align="center">
-    Kusogaki Bot is a discord bot used on the Kusogaki discord server.
-</p>
+If you encounter a bug or have a feature request, please [create an issue](https://github.com/kusogaki-events/kusogaki-bot/issues), or create a support ticket on the [support channel in our discord server](https://discord.com/channels/1204428205675651122/1204814321029488660)
+
+<h2> Want to Contribute? </h2>
+
+Refer to [CONTRIBUTING.md](https://github.com/kusogaki-events/kusogaki-bot/blob/main/docs/CONTRIBUTING.md)
+
+<h2> Commands </h2>

@@ -8,13 +8,13 @@
 
 ## Getting Started
 
-**TODO**
+Before contributing, it's wise to consult someone on the Kusogaki team (either through the discord server or as an issue on the PR).
 
 ## How to Contribute
 
 Thanks in advance for helping out on the project!
 
-**TODO**
+Please refer to [CONTRIBUTING_DEV.md](./CONTRIBUTING_DEV.md) for making code changes that affect functionality.
 
 ## Standards and Guidelines
 

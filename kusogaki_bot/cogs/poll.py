@@ -4,6 +4,7 @@ import logging
 from discord.ext import commands
 
 from kusogaki_bot.services.poll_service import PollError, PollService
+from kusogaki_bot.utils.permissions import MissingRequiredRole, has_required_permission
 
 
 class PollCog(commands.Cog):
@@ -14,6 +15,7 @@ class PollCog(commands.Cog):
         self.poll_service = PollService()
 
     @commands.command(name='poll', description='Create a new poll')
+    @has_required_permission()
     async def create_poll(
         self,
         ctx: commands.Context,
@@ -33,6 +35,16 @@ class PollCog(commands.Cog):
             )
         except PollError as e:
             await ctx.send(str(e))
+
+    async def cog_command_error(self, ctx: commands.Context, error: Exception):
+        """Handle errors for all commands in this cog."""
+        if isinstance(error, MissingRequiredRole):
+            await ctx.send(str(error))
+        elif isinstance(error, PollError):
+            await ctx.send(str(error))
+        else:
+            logging.error(f'Unexpected error: {str(error)}', exc_info=True)
+            await ctx.send('An unexpected error occurred.')
 
     @commands.command(name='endpoll', description='End an active poll')
     async def end_poll(self, ctx: commands.Context, *, question: str):

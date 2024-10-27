@@ -13,7 +13,7 @@ discord-py = "^2.4.0"
 python-dotenv = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.7.0"
+ruff = "^0.7.1"
 pre-commit = "^4.0.1"
 poetry-plugin-export = "^1.8.0"
 

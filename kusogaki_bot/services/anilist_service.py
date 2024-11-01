@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
+from kusogaki_bot.models.anilist_config import AniListConfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -12,11 +14,16 @@ class AniListService:
     """Service for handling AniList API requests."""
 
     def __init__(self):
-        self.base_url = 'https://graphql.anilist.co'
+        self.config = AniListConfig()
         self.session: Optional[aiohttp.ClientSession] = None
-        self.MAX_PAGE = 500
         self.cached_anime: List[Dict[str, Any]] = []
-        self.last_cache_update = 0
+        self.last_cache_update: float = 0
+
+    async def initialize(self):
+        """Initialize the service and create the session."""
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
+        await self._update_cache()
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""
@@ -25,12 +32,24 @@ class AniListService:
         return self.session
 
     async def close(self):
-        """Close the aiohttp session."""
-        if self.session and not self.session.closed:
-            await self.session.close()
+        """Close the service and cleanup resources."""
+        if self._is_closing:
+            return
+
+        self._is_closing = True
+        try:
+            if self.session and not self.session.closed:
+                await self.session.close()
+            self.session = None
+            self.cached_anime.clear()
+            self.last_cache_update = 0
+        except Exception as e:
+            logger.error(f'Error during AniListService cleanup: {e}')
+        finally:
+            self._is_closing = False
 
     async def _fetch_anime_batch(
-        self, page: int = 1, per_page: int = 50
+        self, page: int = 1, per_page: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Fetch a batch of anime from AniList."""
         query = """
@@ -58,7 +77,7 @@ class AniListService:
         }
         """
 
-        variables = {'page': page, 'perPage': per_page}
+        variables = {'page': page, 'perPage': per_page or self.config.batch_size}
 
         try:
             data = await self._make_request(query, variables)
@@ -79,10 +98,13 @@ class AniListService:
         """Update the anime cache with fresh data."""
         try:
             current_time = asyncio.get_event_loop().time()
-            if current_time - self.last_cache_update < 3600:
+            if current_time - self.last_cache_update < self.config.cache_timeout:
                 return
 
-            tasks = [self._fetch_anime_batch(page) for page in range(1, 4)]
+            tasks = [
+                self._fetch_anime_batch(page)
+                for page in range(1, self.config.cache_pages + 1)
+            ]
             results = await asyncio.gather(*tasks)
 
             new_cache = []
@@ -101,14 +123,14 @@ class AniListService:
         except Exception as e:
             logger.error(f'Error updating cache: {e}', exc_info=True)
 
-    async def get_random_anime(self, max_retries: int = 3) -> Dict[str, Any]:
+    async def get_random_anime(self) -> Dict[str, Any]:
         """Get a random anime entry."""
         try:
             await self._update_cache()
 
             if not self.cached_anime:
                 anime_list = await self._fetch_anime_batch(
-                    page=random.randint(1, self.MAX_PAGE)
+                    page=random.randint(1, self.config.max_page)
                 )
                 if not anime_list:
                     raise Exception('Could not fetch any anime')
@@ -124,13 +146,13 @@ class AniListService:
         self, query: str, variables: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Make GraphQL request to AniList API."""
-        for attempt in range(3):
+        for attempt in range(self.config.max_retries):
             try:
                 session = await self._get_session()
                 async with session.post(
-                    self.base_url,
+                    self.config.base_url,
                     json={'query': query, 'variables': variables},
-                    timeout=aiohttp.ClientTimeout(total=10),
+                    timeout=aiohttp.ClientTimeout(total=self.config.request_timeout),
                 ) as response:
                     if response.status == 429:
                         await asyncio.sleep(60)

@@ -38,3 +38,21 @@ Base command: `reminder` (alias: `rem`)
     * `reminder set 2d Check emails`
 * `kuso reminder list`: List all your active reminders
 * `kuso reminder delete <index>` (aliases: `del`, `remove`): Delete a reminder by its index number
+
+### Thread Commands
+> [!IMPORTANT]
+> Thread commands require the "Manage Threads" permission which is only given to certain people.
+
+Base command: `thread`
+* `kuso thread create <role> <name> [message]`: Create a private thread immediately
+  * `role`: The role that can access the thread
+  * `name`: Name of the thread
+  * `message`: Optional initial message in the thread
+  * Example:
+    * `thread create @Kaoru Cult "romance manga" "The Fragrant Flower Blooms With Dignity slaps"`
+* `kuso thread schedule <role> <time> <name> [message]`: Schedule a private thread for later
+  * Time format: `1h30m`, `2d`, `30m`
+  * Example:
+    * `thread schedule @Book Club 2h "The Gunslinger" "Thread for The Gunslinger Discussion!"`
+* `kuso thread list`: List all scheduled threads
+* `kuso thread delete <id>` (aliases: `del`, `remove`): Delete a scheduled thread by its ID

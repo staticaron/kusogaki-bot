@@ -56,3 +56,7 @@ Base command: `thread`
     * `thread schedule @Book Club 2h "The Gunslinger" "Thread for The Gunslinger Discussion!"`
 * `kuso thread list`: List all scheduled threads
 * `kuso thread delete <id>` (aliases: `del`, `remove`): Delete a scheduled thread by its ID
+
+### Food Counter Commands
+* `kuso awaiz` (alias: `caseoh`): Increment food mention counter for Awaiz
+* `kuso awaizcount` (alias: `drywall`): Display current food mention count for Awaiz

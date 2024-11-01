@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 from kusogaki_bot.data.reminder_repository import ReminderRepository
 from kusogaki_bot.services.reminder_service import ReminderError, ReminderService
 from kusogaki_bot.utils.base_cog import BaseCog
+from kusogaki_bot.utils.embeds import EmbedType, get_embed
 
 
 class RemindersCog(BaseCog):
@@ -63,7 +64,7 @@ class RemindersCog(BaseCog):
             await ctx.send('You have no active reminders!')
             return
 
-        embed = self._create_reminders_list_embed(reminders)
+        embed = await self._create_reminders_list_embed(reminders)
         await ctx.send(embed=embed)
 
     @reminder.command(name='delete', aliases=['del', 'remove'])
@@ -82,10 +83,8 @@ class RemindersCog(BaseCog):
             user = await self.bot.fetch_user(int(user_id))
             channel = self.bot.get_channel(reminder['channel_id'])
 
-            embed = discord.Embed(
-                title='⏰ Reminder!',
-                description=reminder['message'],
-                color=discord.Color.blue(),
+            embed = await get_embed(
+                EmbedType.INFORMATION, '⏰ Reminder!', reminder['message']
             )
             embed.set_footer(
                 text=f"Set {datetime.fromtimestamp(reminder['created_at']).strftime('%Y-%m-%d %H:%M:%S')}"
@@ -100,16 +99,18 @@ class RemindersCog(BaseCog):
 
     async def _send_confirmation(self, ctx: commands.Context, time: str, message: str):
         """Send confirmation for a new reminder."""
-        embed = discord.Embed(
-            title='✅ Reminder Set!',
-            description=f"I'll remind you about: {message}\nIn: {time}",
-            color=discord.Color.green(),
+        embed = await get_embed(
+            EmbedType.NORMAL,
+            '✅ Reminder Set!',
+            f"I'll remind you about: {message}\nIn: {time}",
         )
         await ctx.send(embed=embed)
 
-    def _create_reminders_list_embed(self, reminders: List[Dict]) -> discord.Embed:
+    async def _create_reminders_list_embed(
+        self, reminders: List[Dict]
+    ) -> discord.Embed:
         """Create embed for listing reminders."""
-        embed = discord.Embed(title='Your Reminders', color=discord.Color.blue())
+        embed = await get_embed(EmbedType.INFORMATION, 'Your Reminders', '')
         for i, reminder in enumerate(reminders, 1):
             time_left = reminder['time'] - datetime.now().timestamp()
             hours = int(time_left // 3600)

@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 from kusogaki_bot.models.round_data import RoundData
+from kusogaki_bot.utils.embeds import EmbedType, get_embed
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +22,12 @@ class GameMessageService:
     ) -> Optional[discord.Message]:
         """Send the game start message."""
         try:
-            embed = discord.Embed(
-                title='GTA Quiz Game',
-                description=(
-                    '⏰ Game starting in `15` seconds!\n\n'
-                    f'Starting player: {creator.mention}\n'
-                    'Type `kuso gtaquiz join` or `gq join` to join the game!'
-                ),
-                color=discord.Color.green(),
+            embed = await get_embed(
+                EmbedType.NORMAL,
+                'GTA Quiz Game',
+                '⏰ Game starting in `15` seconds!\n\n'
+                f'Starting player: {creator.mention}\n'
+                'Type `kuso gtaquiz join` or `kuso gq join` to join the game!',
             )
             message = await ctx.send(embed=embed)
             self.game_messages.append(message)
@@ -46,12 +45,13 @@ class GameMessageService:
 
                 progress_bar = self._create_progress_bar(countdown)
 
-                embed = message.embeds[0]
-                embed.description = (
+                embed = await get_embed(
+                    EmbedType.NORMAL,
+                    'GTA Quiz Game',
                     f"⏰ Game starting in `{countdown}` seconds!\n"
                     f"{progress_bar}\n"
-                    f"Starting player: {embed.description.split('Starting player: ')[1].split('\n')[0]}\n"
-                    "Type `kuso gtaquiz join` or `gq join` to join the game!"
+                    f"Starting player: {message.embeds[0].description.split('Starting player: ')[1].split('\n')[0]}\n"
+                    "Type `kuso gtaquiz join` or `kuso gq join` to join the game!",
                 )
 
                 await message.edit(embed=embed)
@@ -76,9 +76,17 @@ class GameMessageService:
         """Send the result of a join attempt."""
         try:
             if not success:
-                await ctx.send('Cannot join the game at this time!')
+                embed = await get_embed(
+                    EmbedType.ERROR, 'Join Failed', 'Cannot join the game at this time!'
+                )
+                await ctx.send(embed=embed)
             else:
-                message = await ctx.send(f'{ctx.author.mention} joined the game!')
+                embed = await get_embed(
+                    EmbedType.NORMAL,
+                    'Join Successful',
+                    f'{ctx.author.mention} joined the game!',
+                )
+                message = await ctx.send(embed=embed)
                 self.game_messages.append(message)
         except Exception as e:
             logger.error(f'Error sending join result: {e}', exc_info=True)
@@ -88,7 +96,7 @@ class GameMessageService:
     ) -> Optional[discord.Message]:
         """Handle displaying a round."""
         try:
-            embed = self._create_round_embed(round_data)
+            embed = await self._create_round_embed(round_data)
             await self.cleanup_current_message()
 
             self.current_message = await ctx.send(embed=embed)
@@ -133,15 +141,15 @@ class GameMessageService:
             if message in self.game_messages:
                 self.game_messages.remove(message)
 
-    def _create_round_embed(self, round_data: RoundData) -> discord.Embed:
+    async def _create_round_embed(self, round_data: RoundData) -> discord.Embed:
         """Create an embed for a round."""
         try:
-            embed = discord.Embed(
-                title='Guess the GTA Scene!',
-                description='\n'.join(
+            embed = await get_embed(
+                EmbedType.NORMAL,
+                'Guess the GTA Scene!',
+                '\n'.join(
                     f'{i+1}. {title}' for i, title in enumerate(round_data.choices)
                 ),
-                color=discord.Color.blue(),
             )
             embed.set_image(url=round_data.image_url)
 
@@ -156,8 +164,8 @@ class GameMessageService:
             return embed
         except Exception as e:
             logger.error(f'Error creating round embed: {e}', exc_info=True)
-            return discord.Embed(
-                title='Error Creating Round',
-                description='An error occurred while creating the round.',
-                color=discord.Color.red(),
+            return await get_embed(
+                EmbedType.ERROR,
+                'Error Creating Round',
+                'An error occurred while creating the round.',
             )

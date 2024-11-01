@@ -3,14 +3,18 @@ import subprocess
 import sys
 
 
-def run_ruff_command(args):
+def run_ruff_command(args, include_base_args=True):
     try:
-        base_args = [
-            '--select',
-            'F,E,I',
-            '--ignore',
-            'E501',
-        ]
+        base_args = (
+            [
+                '--select',
+                'F,E,I',
+                '--ignore',
+                'E501',
+            ]
+            if include_base_args
+            else []
+        )
 
         result = subprocess.run(['ruff'] + args + base_args, check=True)
         sys.exit(result.returncode)
@@ -24,9 +28,8 @@ def format():
         [
             'format',
             '.',
-            '--quote-style',
-            'single',
-        ]
+        ],
+        include_base_args=False,
     )
 
 
@@ -36,7 +39,8 @@ def lint():
             'check',
             '.',
             '--fix',
-        ]
+        ],
+        include_base_args=True,
     )
 
 

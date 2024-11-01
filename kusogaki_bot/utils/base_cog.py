@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from kusogaki_bot.services.poll_service import PollError
 from kusogaki_bot.services.reminder_service import ReminderError
+from kusogaki_bot.utils.embeds import EmbedType, get_embed
 from kusogaki_bot.utils.permissions import MissingRequiredRole
 
 logger = logging.getLogger(__name__)
@@ -75,14 +76,11 @@ class BaseCog(commands.Cog):
             logger.error(f'Error in error handler: {str(e)}', exc_info=True)
             await ctx.send('An error occurred while handling the error.')
 
-    def get_error_embed(
+    async def get_error_embed(
         self, error: Exception, title: Optional[str] = None
     ) -> discord.Embed:
         """Create a standard error embed."""
-        embed = discord.Embed(
-            title=title or 'Error', description=str(error), color=discord.Color.red()
-        )
-        return embed
+        return await get_embed(EmbedType.ERROR, title or 'Error', str(error))
 
     @staticmethod
     def format_error_message(error: Exception, command_name: str) -> str:

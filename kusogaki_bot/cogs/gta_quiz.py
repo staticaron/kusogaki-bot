@@ -1,22 +1,65 @@
 import asyncio
 import logging
-from typing import Dict, List, Set
+from typing import Dict, Optional
 
+import discord
 from discord.ext import commands
 
-from kusogaki_bot.services.game_message_service import GameMessageService
-from kusogaki_bot.services.gta_quiz_service import GTAQuizService
-from kusogaki_bot.utils.base_cog import BaseCog
+from kusogaki_bot.models.game_config import GameConfig
+from kusogaki_bot.services.anilist_service import AniListService
+from kusogaki_bot.services.event_manager import GameEventManager
+from kusogaki_bot.services.game_manager import GameManager
+from kusogaki_bot.services.message_service import MessageService
+from kusogaki_bot.services.player_service import PlayerService
+from kusogaki_bot.services.quiz_round_service import QuizRoundService
+from kusogaki_bot.utils.embeds import EmbedType, get_embed
 
 logger = logging.getLogger(__name__)
 
 
-class GTAQuizCog(BaseCog):
+class GTAQuizCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.quiz_service = GTAQuizService()
-        self.message_service = GameMessageService(bot)
-        self.answered_this_round: Dict[str, Set[int]] = {}
+
+        self.config = GameConfig()
+        self.event_manager = GameEventManager()
+        self.anilist_service = AniListService()
+        self.message_service = MessageService(bot)
+        self.quiz_round_service = QuizRoundService(
+            self.anilist_service, self.event_manager
+        )
+        self.player_service = PlayerService(self.event_manager)
+
+        self.game_manager = GameManager(
+            self.event_manager,
+            self.quiz_round_service,
+            self.player_service,
+            self.message_service,
+            self.config,
+        )
+
+        self.active_countdowns: Dict[str, asyncio.Task] = {}
+
+        self.setup_event_handlers()
+
+        self.init_task = asyncio.create_task(self.initialize_services())
+
+    async def initialize_services(self):
+        """Initialize required services."""
+        try:
+            await self.anilist_service.initialize()
+        except Exception as e:
+            logger.error(f'Failed to initialize services: {e}')
+
+    def setup_event_handlers(self):
+        """Set up all event handlers for the game."""
+        self.event_manager.subscribe('game_created', self.handle_game_created)
+        self.event_manager.subscribe('game_started', self.handle_game_started)
+        self.event_manager.subscribe('answer_received', self.handle_answer_received)
+        self.event_manager.subscribe('game_ended', self.handle_game_ended)
+        self.event_manager.subscribe('player_joined', self.handle_player_joined)
+        self.event_manager.subscribe('player_eliminated', self.handle_player_eliminated)
+        self.event_manager.subscribe('round_ended', self.handle_round_ended)
 
     @commands.group(name='gtaquiz', aliases=['gq'])
     async def gta_quiz(self, ctx: commands.Context):
@@ -28,236 +71,300 @@ class GTAQuizCog(BaseCog):
     async def start_game(self, ctx: commands.Context):
         """Start a new GTA quiz game."""
         try:
-            if self.quiz_service.game_exists(ctx.channel.id):
-                await ctx.send('A game is already running in this channel!')
-                return
+            for game_state in self.game_manager.games.values():
+                if game_state.channel_id == ctx.channel.id:
+                    await ctx.send('A game is already running in this channel!')
+                    return
 
-            game_id = await self.quiz_service.create_game(ctx.channel.id, ctx.author.id)
+            game_id = await self.game_manager.create_game(ctx.channel.id, ctx.author.id)
             if not game_id:
                 await ctx.send('Failed to create game. Please try again.')
                 return
 
-            countdown_msg = await self.message_service.send_game_start(ctx, ctx.author)
-
-            if await self.message_service.run_countdown(countdown_msg, game_id):
-                self.quiz_service.activate_game(game_id)
-                self.answered_this_round[game_id] = set()
-                await self.run_game(ctx, game_id)
-        except Exception as e:
-            logger.error(f'Error in start_game: {e}', exc_info=True)
-            await ctx.send(
-                'An error occurred while starting the game. Please try again.'
+            countdown_msg = await self.send_game_start(ctx, ctx.author)
+            self.active_countdowns[game_id] = asyncio.create_task(
+                self.run_countdown(game_id, countdown_msg)
             )
+
+        except Exception as e:
+            logger.error(f'Error starting game: {e}')
+            await ctx.send('An error occurred while starting the game.')
 
     @gta_quiz.command(name='join')
     async def join_game(self, ctx: commands.Context):
         """Join an ongoing game."""
         try:
-            result = self.quiz_service.add_player(ctx.channel.id, ctx.author.id)
-            await self.message_service.send_join_result(ctx, result)
+            for game_id, game_state in self.game_manager.games.items():
+                if game_state.channel_id == ctx.channel.id:
+                    if game_state.is_active:
+                        await ctx.send('Cannot join an active game!')
+                        return
+
+                    success = await self.player_service.add_player(
+                        {'id': game_id, 'players': game_state.players},
+                        ctx.author.id,
+                        self.config.STARTING_HP,
+                    )
+
+                    if success:
+                        embed = await get_embed(
+                            EmbedType.NORMAL,
+                            'Join Successful',
+                            f'{ctx.author.mention} joined the game!',
+                        )
+                    else:
+                        embed = await get_embed(
+                            EmbedType.ERROR,
+                            'Join Failed',
+                            'You are already in the game!',
+                        )
+
+                    await ctx.send(embed=embed)
+                    return
+
+            await ctx.send('No game available to join!')
+
         except Exception as e:
-            logger.error(f'Error in join_game: {e}', exc_info=True)
+            logger.error(f'Error joining game: {e}')
             await ctx.send('Failed to join the game. Please try again.')
 
     @gta_quiz.command(name='stop')
     async def stop_game(self, ctx: commands.Context):
         """Stop the current game."""
         try:
-            game_id = self.quiz_service.get_game_id_by_channel(ctx.channel.id)
-            if not game_id:
-                await ctx.send('No active game to stop!')
-                return
+            for game_id, game_state in self.game_manager.games.items():
+                if game_state.channel_id == ctx.channel.id:
+                    if game_id in self.active_countdowns:
+                        self.active_countdowns[game_id].cancel()
+                        del self.active_countdowns[game_id]
 
-            if await self.quiz_service.stop_game(game_id):
-                await self.message_service.cleanup_messages()
-                if game_id in self.answered_this_round:
-                    del self.answered_this_round[game_id]
-                await ctx.send('Game stopped!')
-            else:
-                await ctx.send('Failed to stop the game. Please try again.')
+                    await self.game_manager.end_game(game_id)
+                    await ctx.send('Game stopped!')
+                    return
+
+            await ctx.send('No active game to stop!')
+
         except Exception as e:
-            logger.error(f'Error in stop_game: {e}', exc_info=True)
+            logger.error(f'Error stopping game: {e}')
             await ctx.send('An error occurred while stopping the game.')
 
-    async def run_game(self, ctx: commands.Context, game_id: str):
-        """Main game loop."""
+    async def send_game_start(
+        self, ctx: commands.Context, creator: discord.User
+    ) -> Optional[discord.Message]:
+        """Send the game start message."""
         try:
-            loading_msg = await ctx.send('🎲 Loading first round...')
+            embed = await get_embed(
+                EmbedType.NORMAL,
+                'GTA Quiz Game',
+                f'⏰ Game starting in `{self.config.COUNTDOWN_TIME}` seconds!\n\n'
+                f'Starting player: {creator.mention}\n'
+                'Type `kuso gtaquiz join` or `kuso gq join` to join the game!',
+            )
+            return await self.message_service.send_game_message(
+                ctx.channel.id, ctx.message.id, embed
+            )
+        except Exception as e:
+            logger.error(f'Error sending game start: {e}')
+            return None
 
-            while self.quiz_service.is_game_active(game_id):
-                try:
-                    round_data = await self.quiz_service.prepare_round(game_id)
-                    if not round_data:
-                        break
+    async def run_countdown(self, game_id: str, message: discord.Message) -> None:
+        """Run the countdown timer with visual indicator."""
+        try:
+            for countdown in range(self.config.COUNTDOWN_TIME, -1, -1):
+                if message is None or not message.id:
+                    return
 
-                    self.answered_this_round[game_id] = set()
+                progress_bar = self._create_progress_bar(countdown)
 
-                    await loading_msg.edit(content='🎯 Round starting!')
-                    await asyncio.sleep(1)
-                    message = await self.message_service.handle_round(ctx, round_data)
-                    await loading_msg.delete()
+                embed = message.embeds[0]
+                embed.description = (
+                    f"⏰ Game starting in `{countdown}` seconds!\n"
+                    f"{progress_bar}\n"
+                    f"Starting player: {embed.description.split('Starting player: ')[1].split('\n')[0]}\n"
+                    "Type `kuso gtaquiz join` or `kuso gq join` to join the game!"
+                )
 
-                    end_time = (
-                        asyncio.get_event_loop().time()
-                        + self.quiz_service.config.GUESS_TIME
-                    )
-                    correct_answer_given = False
-                    active_players = set(round_data.players.keys())
-                    round_results = []
+                await message.edit(embed=embed)
+                await asyncio.sleep(1)
 
-                    def check_reaction(reaction, user):
-                        if not self.quiz_service.is_game_active(game_id):
-                            return False
-                        if user.bot or user.id not in round_data.players:
-                            return False
-                        if user.id in self.answered_this_round.get(game_id, set()):
-                            return False
-                        if reaction.message.id != message.id:
-                            return False
-                        return str(reaction.emoji)[0].isdigit() and int(
-                            str(reaction.emoji)[0]
-                        ) <= len(round_data.choices)
+            await self.game_manager.start_game(game_id)
 
-                    while (
-                        asyncio.get_event_loop().time() < end_time
-                        and not correct_answer_given
-                        and len(self.answered_this_round.get(game_id, set()))
-                        < len(active_players)
-                    ):
-                        try:
-                            reaction, user = await self.bot.wait_for(
-                                'reaction_add',
-                                timeout=max(
-                                    0.1, end_time - asyncio.get_event_loop().time()
-                                ),
-                                check=check_reaction,
-                            )
+        except asyncio.CancelledError:
+            logger.info(f'Countdown cancelled for game {game_id}')
+        except Exception as e:
+            logger.error(f'Error in countdown: {e}')
+        finally:
+            if game_id in self.active_countdowns:
+                del self.active_countdowns[game_id]
 
-                            if game_id not in self.answered_this_round:
-                                self.answered_this_round[game_id] = set()
+    def _create_progress_bar(self, seconds_left: int) -> str:
+        """Create a visual progress bar for the countdown."""
+        total_width = 20
+        filled = round((seconds_left / self.config.COUNTDOWN_TIME) * total_width)
+        empty = total_width - filled
+        return f'`{"█" * filled}{"░" * empty}`'
 
-                            self.answered_this_round[game_id].add(user.id)
+    async def handle_game_created(self, data: dict):
+        """Handle game creation event."""
+        logger.info(f"Game created: {data['game_id']}")
 
-                            choice_idx = int(str(reaction.emoji)[0]) - 1
-                            selected_answer = round_data.choices[choice_idx]
+    async def handle_game_started(self, data: dict):
+        """Handle game start event."""
+        try:
+            game_id = data['game_id']
+            game_state = self.game_manager.games.get(game_id)
 
-                            if selected_answer == round_data.correct_title:
-                                round_results.append(
-                                    {'user': user, 'correct': True, 'eliminated': False}
-                                )
-                                correct_answer_given = True
-                            else:
-                                eliminated = (
-                                    await self.quiz_service.process_wrong_answer(
-                                        game_id, user.id
-                                    )
-                                )
-                                round_results.append(
-                                    {
-                                        'user': user,
-                                        'correct': False,
-                                        'eliminated': eliminated,
-                                    }
-                                )
+            if not game_state:
+                return
 
-                        except asyncio.TimeoutError:
-                            continue
+            round_data = await self.quiz_round_service.prepare_round(
+                game_id, game_state.players
+            )
 
-                    unanswered_players = active_players - self.answered_this_round.get(
-                        game_id, set()
-                    )
-                    for player_id in unanswered_players:
-                        eliminated = await self.quiz_service.process_wrong_answer(
-                            game_id, player_id
-                        )
-                        round_results.append(
-                            {
-                                'user_id': player_id,
-                                'correct': False,
-                                'eliminated': eliminated,
-                                'timeout': True,
-                            }
-                        )
-
-                    await self.display_round_results(
-                        ctx, round_results, round_data.correct_title
-                    )
-
-                    await asyncio.sleep(3)
-                    if not await self.quiz_service.check_game_continuation(game_id):
-                        break
-
-                    loading_msg = await ctx.send('🎲 Loading next round...')
-
-                except Exception as e:
-                    logger.error(f'Error in game round: {e}', exc_info=True)
-                    await ctx.send(
-                        'An error occurred during the round. Stopping the game.'
-                    )
-                    await self.quiz_service.stop_game(game_id)
-                    break
+            if not round_data:
+                await self.game_manager.end_game(game_id)
+                channel = self.bot.get_channel(game_state.channel_id)
+                if channel:
+                    await channel.send('Failed to prepare game round. Ending game.')
+                return
 
         except Exception as e:
-            logger.error(f'Error in run_game: {e}', exc_info=True)
-            await ctx.send('An error occurred during the game. Stopping the game.')
+            logger.error(f'Error handling game start: {e}')
 
-        finally:
-            if game_id in self.answered_this_round:
-                del self.answered_this_round[game_id]
-            await self.message_service.cleanup_messages()
+    async def handle_answer_received(self, data: dict):
+        """Handle received answer event."""
+        try:
+            game_id = data['game_id']
+            player_id = data['player_id']
+            answer = data['answer']
 
-    async def display_round_results(
-        self, ctx: commands.Context, results: List[dict], correct_answer: str
-    ):
-        """Display all round results at once."""
-        messages = []
+            game_state = self.game_manager.games.get(game_id)
+            if not game_state:
+                return
 
-        correct_players = [r for r in results if r.get('correct')]
-        if correct_players:
-            winner = correct_players[0]
-            messages.append(f"🎉 {winner['user'].mention} got it right!")
+            round_data = self.quiz_round_service.current_rounds.get(game_id)
+            if not round_data:
+                return
 
-        incorrect_players = [
-            r for r in results if not r.get('correct') and not r.get('timeout')
-        ]
-        if incorrect_players:
-            eliminated_players = [r for r in incorrect_players if r['eliminated']]
-            survived_players = [r for r in incorrect_players if not r['eliminated']]
+            choice_idx = int(str(answer.emoji)[0]) - 1
+            selected_answer = round_data.choices[choice_idx]
 
-            if eliminated_players:
-                players_text = ', '.join(
-                    f"{r['user'].mention}" for r in eliminated_players
-                )
-                messages.append(f'❌ Eliminated: {players_text}')
+            if selected_answer == round_data.correct_title:
+                await self.handle_correct_answer(game_id, player_id)
+            else:
+                await self.handle_wrong_answer(game_id, player_id)
 
-            if survived_players:
-                players_text = ', '.join(
-                    f"{r['user'].mention}" for r in survived_players
-                )
-                messages.append(f'❌ Lost 1 HP: {players_text}')
+        except Exception as e:
+            logger.error(f'Error handling answer: {e}')
 
-        timeout_players = [r for r in results if r.get('timeout')]
-        if timeout_players:
-            eliminated_timeouts = [r for r in timeout_players if r['eliminated']]
-            survived_timeouts = [r for r in timeout_players if not r['eliminated']]
+    async def handle_correct_answer(self, game_id: str, player_id: int):
+        """Handle correct answer from player."""
+        try:
+            game_state = self.game_manager.games.get(game_id)
+            if not game_state:
+                return
 
-            if eliminated_timeouts:
-                players_text = ', '.join(
-                    f"<@{r['user_id']}>" for r in eliminated_timeouts
-                )
-                messages.append(f'⏰ Eliminated for not answering: {players_text}')
+            channel = self.bot.get_channel(game_state.channel_id)
+            if not channel:
+                return
 
-            if survived_timeouts:
-                players_text = ', '.join(
-                    f"<@{r['user_id']}>" for r in survived_timeouts
-                )
-                messages.append(f'⏰ Lost 1 HP for not answering: {players_text}')
+            round_data = self.quiz_round_service.current_rounds.get(game_id)
+            if not round_data:
+                return
 
-        if messages:
-            results_message = '\n'.join(messages)
-            await ctx.send(f'{results_message}\n\nThe answer was: **{correct_answer}**')
-        else:
-            await ctx.send(f'Round ended. The answer was: **{correct_answer}**')
+            await channel.send(
+                f'🎉 <@{player_id}> got it right!\n'
+                f'The answer was: **{round_data.correct_title}**'
+            )
+
+            await asyncio.sleep(3)
+            await self.quiz_round_service.prepare_round(game_id, game_state.players)
+
+        except Exception as e:
+            logger.error(f'Error handling correct answer: {e}')
+
+    async def handle_wrong_answer(self, game_id: str, player_id: int):
+        """Handle wrong answer from player."""
+        try:
+            eliminated = await self.game_manager.process_wrong_answer(
+                game_id, player_id
+            )
+
+            game_state = self.game_manager.games.get(game_id)
+            if not game_state:
+                return
+
+            channel = self.bot.get_channel(game_state.channel_id)
+            if not channel:
+                return
+
+            if eliminated:
+                await channel.send(f'❌ <@{player_id}> has been eliminated!')
+
+                if not await self.game_manager.check_game_continuation(game_id):
+                    await self.game_manager.end_game(game_id)
+            else:
+                await channel.send(f'❌ <@{player_id}> lost 1 HP!')
+
+        except Exception as e:
+            logger.error(f'Error handling wrong answer: {e}')
+
+    async def handle_game_ended(self, data: dict):
+        """Handle game end event."""
+        try:
+            channel_id = data['channel_id']
+            game_id = data['game_id']
+            channel = self.bot.get_channel(channel_id)
+
+            if channel:
+                await channel.send('Game Over!')
+
+            if game_id in self.active_countdowns:
+                self.active_countdowns[game_id].cancel()
+                del self.active_countdowns[game_id]
+
+            await self.message_service.cleanup_game_messages(game_id)
+
+            if not self.game_manager.games and getattr(
+                self, '_is_shutting_down', False
+            ):
+                await self.anilist_service.close()
+
+        except Exception as e:
+            logger.error(f'Error handling game end: {e}')
+
+    async def handle_player_joined(self, data: dict):
+        """Handle player join event."""
+        logger.info(f"Player {data['player_id']} joined game {data['game_id']}")
+
+    async def handle_player_eliminated(self, data: dict):
+        """Handle player elimination event."""
+        logger.info(
+            f"Player {data['player_id']} eliminated from game {data['game_id']}"
+        )
+
+    async def handle_round_ended(self, data: dict):
+        """Handle round end event."""
+        logger.info(f"Round ended for game {data['game_id']}")
+
+
+async def cog_unload(self):
+    """Cleanup when the cog is unloaded."""
+    try:
+        if hasattr(self, 'init_task'):
+            self.init_task.cancel()
+
+        for task in self.active_countdowns.values():
+            task.cancel()
+        self.active_countdowns.clear()
+
+        for game_id in list(self.game_manager.games.keys()):
+            await self.game_manager.end_game(game_id)
+
+        await self.anilist_service.close()
+
+    except Exception as e:
+        logger.error(f'Error during cog cleanup: {e}')
 
 
 async def setup(bot: commands.Bot):

@@ -4,7 +4,7 @@ from typing import Dict
 
 import redis
 
-from kusogaki_bot.database.redis_db import Database
+from kusogaki_bot.data.redis_db import Database
 
 
 class ScheduledThreadRepository:

@@ -101,9 +101,11 @@ class GTAQuizCog(BaseCog):
                         asyncio.get_event_loop().time()
                         + self.quiz_service.config.GUESS_TIME
                     )
+                    round_start_time = asyncio.get_event_loop().time()
                     correct_answer_given = False
                     active_players = set(round_data.players.keys())
                     round_results = []
+                    any_answer_given = False
 
                     def check_reaction(reaction, user):
                         if not self.quiz_service.is_game_active(game_id):
@@ -125,14 +127,23 @@ class GTAQuizCog(BaseCog):
                         < len(active_players)
                     ):
                         try:
+                            timeout = max(
+                                0.1,
+                                min(
+                                    end_time - asyncio.get_event_loop().time(),
+                                    round_start_time
+                                    + self.quiz_service.config.ROUND_TIMEOUT
+                                    - asyncio.get_event_loop().time(),
+                                ),
+                            )
+
                             reaction, user = await self.bot.wait_for(
                                 'reaction_add',
-                                timeout=max(
-                                    0.1, end_time - asyncio.get_event_loop().time()
-                                ),
+                                timeout=timeout,
                                 check=check_reaction,
                             )
 
+                            any_answer_given = True
                             if game_id not in self.answered_this_round:
                                 self.answered_this_round[game_id] = set()
 
@@ -161,27 +172,41 @@ class GTAQuizCog(BaseCog):
                                 )
 
                         except asyncio.TimeoutError:
+                            if (
+                                not any_answer_given
+                                and asyncio.get_event_loop().time()
+                                >= round_start_time
+                                + self.quiz_service.config.ROUND_TIMEOUT
+                            ):
+                                await ctx.send(
+                                    f'⏰ Game Over! No one answered in {self.quiz_service.config.ROUND_TIMEOUT} seconds.\n'
+                                    f'The answer was: **{round_data.correct_title}**'
+                                )
+                                await self.quiz_service.stop_game(game_id)
+                                return
                             continue
 
-                    unanswered_players = active_players - self.answered_this_round.get(
-                        game_id, set()
-                    )
-                    for player_id in unanswered_players:
-                        eliminated = await self.quiz_service.process_wrong_answer(
-                            game_id, player_id
+                    if any_answer_given:
+                        unanswered_players = (
+                            active_players
+                            - self.answered_this_round.get(game_id, set())
                         )
-                        round_results.append(
-                            {
-                                'user_id': player_id,
-                                'correct': False,
-                                'eliminated': eliminated,
-                                'timeout': True,
-                            }
-                        )
+                        for player_id in unanswered_players:
+                            eliminated = await self.quiz_service.process_wrong_answer(
+                                game_id, player_id
+                            )
+                            round_results.append(
+                                {
+                                    'user_id': player_id,
+                                    'correct': False,
+                                    'eliminated': eliminated,
+                                    'timeout': True,
+                                }
+                            )
 
-                    await self.display_round_results(
-                        ctx, round_results, round_data.correct_title
-                    )
+                        await self.display_round_results(
+                            ctx, round_results, round_data.correct_title
+                        )
 
                     await asyncio.sleep(3)
                     if not await self.quiz_service.check_game_continuation(game_id):

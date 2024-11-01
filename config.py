@@ -11,3 +11,7 @@ load_dotenv()
 
 TOKEN = getenv('TOKEN')
 STAFF_ROLE_ID = getenv('STAFF_ROLE_ID')
+
+DB_HOST = getenv('DB_HOST')
+DB_PORT = getenv('DB_PORT')
+DB_PASSWORD = getenv('DB_PASSWORD')

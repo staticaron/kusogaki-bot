@@ -1,4 +1,4 @@
-![](./static/Github_Readme.png)
+![](./static/githubbanner.png)
 <br />
 
 <h2> Bug report or Feature request </h2>

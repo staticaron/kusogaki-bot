@@ -1,6 +1,19 @@
 name: Create Release
 on:
   workflow_dispatch:
+    inputs:
+      version-increment:
+        description: 'Type of version increment'
+        type: choice
+        required: true
+        default: 'patch'
+        options:
+          - patch
+          - minor
+          - major
+
 jobs:
   create-release:
     uses: kusogaki-events/actions-workflows/.github/workflows/release.yml@main
+    with:
+      version-increment: ${{ inputs.version-increment }}

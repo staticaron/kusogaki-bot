@@ -11,9 +11,9 @@ on:
           - patch
           - minor
           - major
-
 jobs:
   create-release:
     uses: kusogaki-events/actions-workflows/.github/workflows/release.yml@main
     with:
       version-increment: ${{ inputs.version-increment }}
+    secrets: inherit

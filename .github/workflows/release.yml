@@ -14,7 +14,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  worklows: write
+  actions: write
 jobs:
   create-release:
     uses: kusogaki-events/actions-workflows/.github/workflows/release.yml@main

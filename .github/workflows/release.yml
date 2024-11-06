@@ -13,6 +13,7 @@ on:
           - major
 permissions:
   contents: write
+  pull-requests: write
 jobs:
   create-release:
     uses: kusogaki-events/actions-workflows/.github/workflows/release.yml@main

@@ -3,9 +3,10 @@ import logging
 
 from discord.ext import commands
 
+from config import BOOKCLUB_CHANNEL_ID
 from kusogaki_bot.services.poll_service import PollError, PollService
 from kusogaki_bot.utils.base_cog import BaseCog
-from kusogaki_bot.utils.permissions import has_required_permission
+from kusogaki_bot.utils.permissions import check_permission_or_channel
 
 
 class PollCog(BaseCog):
@@ -16,7 +17,6 @@ class PollCog(BaseCog):
         self.poll_service = PollService()
 
     @commands.command(name='poll', description='Create a new poll')
-    @has_required_permission()
     async def create_poll(
         self,
         ctx: commands.Context,
@@ -25,7 +25,13 @@ class PollCog(BaseCog):
         multiple: bool,
         *options: str,
     ):
-        """Create a new poll."""
+        """Create a new poll. Can be used by staff/dev team anywhere, or by anyone in the designated poll channel."""
+        if not await check_permission_or_channel(ctx, BOOKCLUB_CHANNEL_ID):
+            await ctx.send(
+                "You can only create polls in the designated poll channel unless you're a staff member."
+            )
+            return
+
         try:
             self.poll_service.validate_options(options)
             poll = self.poll_service.create_poll(question, duration, multiple, options)
@@ -40,6 +46,12 @@ class PollCog(BaseCog):
     @commands.command(name='endpoll', description='End an active poll')
     async def end_poll(self, ctx: commands.Context, *, question: str):
         """End an active poll."""
+        if not await check_permission_or_channel(ctx, BOOKCLUB_CHANNEL_ID):
+            await ctx.send(
+                "You can only end polls in the designated poll channel unless you're a staff member."
+            )
+            return
+
         try:
             poll, _ = self.poll_service.get_poll(question)
             await poll.end()

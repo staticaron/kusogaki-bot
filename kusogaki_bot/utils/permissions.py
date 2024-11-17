@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord.ext.commands import CheckFailure
+from discord.ext.commands import CheckFailure, Context
 from discord.utils import get
 
 from config import STAFF_ROLE_ID
@@ -38,3 +38,25 @@ def has_required_permission():
         )
 
     return commands.check(predicate)
+
+
+async def check_permission_or_channel(ctx: Context, channel_id: int) -> bool:
+    """
+    Check if user either has required permissions or is in the specified channel.
+
+    Args:
+        ctx: The command context
+        channel_id: The ID of the allowed channel
+
+    Returns:
+        bool: True if user has permission or is in allowed channel
+    """
+    try:
+        check = has_required_permission().predicate
+        has_permission = await check(ctx)
+        if has_permission:
+            return True
+    except MissingRequiredRole:
+        pass
+
+    return ctx.channel.id == channel_id

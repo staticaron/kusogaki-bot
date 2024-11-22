@@ -176,11 +176,14 @@ class GTAQuizCog(commands.Cog):
 
                 progress_bar = self._create_progress_bar(countdown)
 
+                current_desc = message.embeds[0].description
+                starting_player = current_desc.split('Starting player: ')[1].split('\n')[0]
+
                 embed = message.embeds[0]
                 embed.description = (
                     f"⏰ Game starting in `{countdown}` seconds!\n"
                     f"{progress_bar}\n"
-                    f"Starting player: {embed.description.split('Starting player: ')[1].split('\n')[0]}\n"
+                    f"Starting player: {starting_player}\n"
                     "Type `kuso gtaquiz join` or `kuso gq join` to join the game!"
                 )
 
@@ -348,23 +351,23 @@ class GTAQuizCog(commands.Cog):
         logger.info(f"Round ended for game {data['game_id']}")
 
 
-async def cog_unload(self):
-    """Cleanup when the cog is unloaded."""
-    try:
-        if hasattr(self, 'init_task'):
-            self.init_task.cancel()
+    async def cog_unload(self):
+        """Cleanup when the cog is unloaded."""
+        try:
+            if hasattr(self, 'init_task'):
+                self.init_task.cancel()
 
-        for task in self.active_countdowns.values():
-            task.cancel()
-        self.active_countdowns.clear()
+            for task in self.active_countdowns.values():
+                task.cancel()
+            self.active_countdowns.clear()
 
-        for game_id in list(self.game_manager.games.keys()):
-            await self.game_manager.end_game(game_id)
+            for game_id in list(self.game_manager.games.keys()):
+                await self.game_manager.end_game(game_id)
 
-        await self.anilist_service.close()
+            await self.anilist_service.close()
 
-    except Exception as e:
-        logger.error(f'Error during cog cleanup: {e}')
+        except Exception as e:
+            logger.error(f'Error during cog cleanup: {e}')
 
 
 async def setup(bot: commands.Bot):

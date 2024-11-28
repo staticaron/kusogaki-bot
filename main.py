@@ -1,4 +1,3 @@
-import os
 from os import listdir
 
 from discord import Intents
@@ -9,8 +8,6 @@ from config import TOKEN
 intents = Intents.default()
 intents.message_content = True
 intents.members = True
-
-print('Test env var present:', 'TOKEN' in os.environ)
 
 
 class Kusogaki(commands.AutoShardedBot):

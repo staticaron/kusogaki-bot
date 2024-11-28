@@ -1,39 +1,20 @@
-name: Deploy Bot
+name: Deploy to Railway
+
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+
 jobs:
   deploy:
-    name: Deploy to Fly.io
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
-      - name: Setup Fly.io CLI
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Check Fly.io configuration
-        run: |
-          if [ ! -f "fly.toml" ]; then
-            echo "Error: fly.toml configuration file not found"
-            exit 1
-          fi
-
-      - name: Deploy to Fly.io
+      - name: Deploy to Railway
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: flyctl deploy --remote-only
-
-      - name: Verify Deployment
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          flyctl status
-          echo "Deployment completed successfully"
-
-      - name: Handle Deployment Failure
-        if: failure()
-        run: |
-          echo "Deployment failed! Check the logs above for more details."
-          exit 1
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up

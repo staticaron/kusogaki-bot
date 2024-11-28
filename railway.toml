@@ -1,0 +1,16 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install poetry && poetry install"
+
+[deploy]
+startCommand = "python main.py"
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "on-failure"
+
+[service]
+memory = "1024M"
+cpu = "1"
+
+[env]
+PORT = "8080"

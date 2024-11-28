@@ -4,8 +4,6 @@ buildCommand = "pip install poetry && poetry install"
 
 [deploy]
 startCommand = "python main.py"
-healthcheckPath = "/"
-healthcheckTimeout = 300
 
 [service]
 memory = "1024M"

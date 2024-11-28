@@ -11,7 +11,7 @@ if 'RAILWAY_ENVIRONMENT' not in environ:
     load_dotenv()
 
 
-print('Direct environ TOKEN length:', len(environ.get('TOKEN', '')))
+print('Direct environ DB_HOST length:', len(environ.get('DB_HOST', '')))
 print('Direct getenv TOKEN length:', len(getenv('TOKEN', '')))
 
 TOKEN = getenv('TOKEN')

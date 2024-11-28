@@ -6,7 +6,6 @@ buildCommand = "pip install poetry && poetry install"
 startCommand = "python main.py"
 healthcheckPath = "/"
 healthcheckTimeout = 300
-restartPolicyType = "on-failure"
 
 [service]
 memory = "1024M"

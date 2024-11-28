@@ -1,3 +1,4 @@
+import os
 from os import listdir
 
 from discord import Intents
@@ -9,10 +10,14 @@ intents = Intents.default()
 intents.message_content = True
 intents.members = True
 
+print('Test env var present:', 'TOKEN' in os.environ)
+
 
 class Kusogaki(commands.AutoShardedBot):
     def __init__(self) -> None:
-        super().__init__(command_prefix=self.get_prefix, intents=intents, help_command=None)
+        super().__init__(
+            command_prefix=self.get_prefix, intents=intents, help_command=None
+        )
 
     async def get_prefix(self, message):
         return commands.when_mentioned_or('kuso ', 'KUSO ', 'Kuso ')(self, message)

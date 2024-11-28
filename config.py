@@ -10,7 +10,9 @@ ERROR_COLOR = 0xE74C3C
 if 'RAILWAY_ENVIRONMENT' not in environ:
     load_dotenv()
 
-TOKEN = getenv('TOKEN')
+print('Railway env:', 'RAILWAY_ENVIRONMENT' in environ)
+
+TOKEN = environ.get('TOKEN')
 STAFF_ROLE_ID = getenv('STAFF_ROLE_ID')
 
 DB_HOST = getenv('DB_HOST')

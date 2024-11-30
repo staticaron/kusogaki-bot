@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.1.0...v0.2.0) (2024-11-30)
+
+
+### Features
+
+* add cheat ping command ([f5810c6](https://github.com/kusogaki-events/kusogaki-bot/commit/f5810c6abe59c16da3f42226f891a5edac587dfd))
+
 ## 0.1.0 (2024-11-28)
 
 

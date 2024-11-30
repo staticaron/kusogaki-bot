@@ -13,6 +13,10 @@ class GeneralCog(BaseCog):
     async def ping(self, ctx: commands.Context):
         await ctx.send(f'**Latency** : {round(self.bot.latency * 1000, 2)}ms')
 
+    @commands.hybrid_command(name='cheat', description='Shows a fake low latency')
+    async def fake_ping(self, ctx: commands.Context):
+        await ctx.send('**Latency** : 00.01ms')
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(GeneralCog(bot))

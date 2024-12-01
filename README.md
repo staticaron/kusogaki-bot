@@ -1,6 +1,10 @@
 ![](./static/githubbanner.png)
 <br />
 
+<h2> Status </h2>
+
+![Status](https://img.shields.io/badge/Kusogaki%20Bot-Online-brightgreen?style=for-the-badge&logo=discord&logoColor=white)
+
 <h2> Bug report or Feature request </h2>
 
 If you encounter a bug or have a feature request, please [create an issue](https://github.com/kusogaki-events/kusogaki-bot/issues), or create a support ticket on the [support channel in our discord server](https://discord.com/channels/1204428205675651122/1204814321029488660)

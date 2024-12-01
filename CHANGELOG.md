@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.1](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.3.0...v0.3.1) (2024-12-01)
+
+
+### Bug Fixes
+
+* use correct database model ([b4cbba4](https://github.com/kusogaki-events/kusogaki-bot/commit/b4cbba4252076a7783a415cd03d81783eacc1cb9))
+
+
+### Documentation
+
+* add status badge to readme ([88fb11a](https://github.com/kusogaki-events/kusogaki-bot/commit/88fb11a2851dc70b851dd5e04313dc8d2193fb43))
+
 ## [0.3.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.2.0...v0.3.0) (2024-12-01)
 
 

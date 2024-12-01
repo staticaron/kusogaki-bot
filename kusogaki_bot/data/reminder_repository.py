@@ -1,73 +1,63 @@
-import json
 import logging
+from typing import Dict
 
-import redis
+from sqlalchemy.exc import SQLAlchemyError
 
-from kusogaki_bot.data.redis_db import Database
+from kusogaki_bot.data.db import Database
+from kusogaki_bot.data.models import Reminder
 
 
 class ReminderRepository:
-    """Repository class for reminder persistence using Redis."""
+    """Repository class for reminder persistence using PostgreSQL."""
 
-    def __init__(self, key_prefix='reminder:'):
-        """Initialize Redis connection using Database singleton."""
-        self.redis_client = Database.get_instance()
-        self.key_prefix = key_prefix
+    def __init__(self):
+        """Initialize database connection using Database singleton."""
+        self.db = Database.get_instance()
 
-    def load(self) -> dict:
-        """Load all reminders from Redis."""
+    def load(self) -> Dict:
+        """Load all reminders from database."""
         try:
-            all_keys = self.redis_client.keys(f'{self.key_prefix}*')
-            if not all_keys:
-                return {}
-
-            all_values = self.redis_client.mget(all_keys)
-
             reminders = {}
-            for key, value in zip(all_keys, all_values):
-                if value is None:
-                    continue
-                user_id = key.replace(self.key_prefix, '')
-                try:
-                    reminders[user_id] = json.loads(value)
-                except json.JSONDecodeError as e:
-                    logging.error(
-                        f'Error decoding reminders for user {user_id}: {str(e)}'
-                    )
-                    continue
-
+            results = self.db.query(Reminder).all()
+            for reminder in results:
+                reminders[reminder.user_id] = reminder.data
             return reminders
-        except redis.RedisError as e:
-            logging.error(f'Error loading reminders from Redis: {str(e)}')
+        except SQLAlchemyError as e:
+            logging.error(f'Error loading reminders from database: {str(e)}')
             return {}
 
-    def save(self, data: dict) -> None:
-        """Save reminders to Redis."""
+    def save(self, data: Dict) -> None:
+        """Save reminders to database."""
         try:
-            existing_keys = self.redis_client.keys(f'{self.key_prefix}*')
-
-            current_user_keys = {
-                f'{self.key_prefix}{user_id}' for user_id in data.keys()
-            }
-            keys_to_delete = set(existing_keys) - current_user_keys
-            if keys_to_delete:
-                self.redis_client.delete(*keys_to_delete)
+            existing_user_ids = {r.user_id for r in self.db.query(Reminder).all()}
+            users_to_delete = existing_user_ids - set(data.keys())
+            if users_to_delete:
+                self.db.query(Reminder).filter(
+                    Reminder.user_id.in_(users_to_delete)
+                ).delete(synchronize_session=False)
 
             for user_id, reminders in data.items():
-                key = f'{self.key_prefix}{user_id}'
                 if reminders:
-                    self.redis_client.set(key, json.dumps(reminders))
+                    existing = (
+                        self.db.query(Reminder).filter_by(user_id=user_id).first()
+                    )
+                    if existing:
+                        existing.data = reminders
+                    else:
+                        self.db.add(Reminder(user_id=user_id, data=reminders))
                 else:
-                    self.redis_client.delete(key)
+                    self.db.query(Reminder).filter_by(user_id=user_id).delete()
 
-        except redis.RedisError as e:
-            logging.error(f'Error saving reminders to Redis: {str(e)}')
+            self.db.commit()
+        except SQLAlchemyError as e:
+            logging.error(f'Error saving reminders to database: {str(e)}')
+            self.db.rollback()
 
     def clear_all(self) -> None:
-        """Clear all reminders from Redis (useful for testing)."""
+        """Clear all reminders from database (useful for testing)."""
         try:
-            keys = self.redis_client.keys(f'{self.key_prefix}*')
-            if keys:
-                self.redis_client.delete(*keys)
-        except redis.RedisError as e:
-            logging.error(f'Error clearing reminders from Redis: {str(e)}')
+            self.db.query(Reminder).delete()
+            self.db.commit()
+        except SQLAlchemyError as e:
+            logging.error(f'Error clearing reminders from database: {str(e)}')
+            self.db.rollback()

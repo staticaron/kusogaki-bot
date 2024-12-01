@@ -11,3 +11,4 @@ cpu = "1"
 
 [env]
 PORT = "8080"
+DATABASE_URL = "${DATABASE_URL}"

@@ -1,70 +1,57 @@
-import json
 import logging
 from datetime import datetime
 
-import redis
+from sqlalchemy.exc import SQLAlchemyError
 
-from kusogaki_bot.data.redis_db import Database
-from kusogaki_bot.models.food_counter import FoodCounter
+from kusogaki_bot.data.db import Database
+from kusogaki_bot.data.models import FoodCounter
 
 
 class FoodCounterRepository:
-    """Repository class for food counter persistence using Redis."""
+    """Repository class for food counter persistence using PostgreSQL."""
 
-    def __init__(self, key_prefix='food_counter:'):
-        """Initialize Redis connection using Database singleton."""
-        self.redis_client = Database.get_instance()
-        self.key_prefix = key_prefix
+    def __init__(self):
+        """Initialize database connection using Database singleton."""
+        self.db = Database.get_instance()
 
     def get_counter(self, user_id: str) -> FoodCounter:
-        """Get a user's food counter from Redis."""
+        """Get a user's food counter from the database."""
         try:
-            key = f'{self.key_prefix}{user_id}'
-            data = self.redis_client.get(key)
-
-            if data:
-                try:
-                    counter_data = json.loads(data)
-                    return FoodCounter(
-                        user_id=user_id,
-                        count=counter_data['count'],
-                        last_updated=datetime.fromisoformat(
-                            counter_data['last_updated']
-                        ),
-                    )
-                except (json.JSONDecodeError, KeyError) as e:
-                    logging.error(
-                        f'Error decoding food counter for user {user_id}: {str(e)}'
-                    )
-                    return FoodCounter(user_id=user_id)
-            return FoodCounter(user_id=user_id)
-
-        except redis.RedisError as e:
-            logging.error(f'Error loading food counter from Redis: {str(e)}')
+            counter = self.db.query(FoodCounter).filter_by(user_id=user_id).first()
+            if not counter:
+                counter = FoodCounter(user_id=user_id)
+            return counter
+        except SQLAlchemyError as e:
+            logging.error(f'Error loading food counter from database: {str(e)}')
             return FoodCounter(user_id=user_id)
 
     def save_counter(self, counter: FoodCounter) -> None:
-        """Save a food counter to Redis."""
+        """Save a food counter to the database."""
         try:
-            key = f'{self.key_prefix}{counter.user_id}'
-            data = {
-                'count': counter.count,
-                'last_updated': counter.last_updated.isoformat(),
-            }
-
             if counter.count > 0:
-                self.redis_client.set(key, json.dumps(data))
+                existing = (
+                    self.db.query(FoodCounter)
+                    .filter_by(user_id=counter.user_id)
+                    .first()
+                )
+                if existing:
+                    existing.count = counter.count
+                    existing.last_updated = datetime.now()
+                else:
+                    self.db.add(counter)
             else:
-                self.redis_client.delete(key)
+                self.db.query(FoodCounter).filter_by(user_id=counter.user_id).delete()
 
-        except redis.RedisError as e:
-            logging.error(f'Error saving food counter to Redis: {str(e)}')
+            self.db.commit()
+        except SQLAlchemyError as e:
+            logging.error(f'Error saving food counter to database: {str(e)}')
+            self.db.rollback()
 
     def clear_all(self) -> None:
-        """Clear all food counters from Redis (useful for testing)."""
+        """Clear all food counters from the database (useful for testing)."""
         try:
-            keys = self.redis_client.keys(f'{self.key_prefix}*')
-            if keys:
-                self.redis_client.delete(*keys)
-        except redis.RedisError as e:
-            logging.error(f'Error clearing food counters from Redis: {str(e)}')
+            self.db.query(FoodCounter).delete()
+            self.db.commit()
+        except SQLAlchemyError as e:
+            logging.error(f'Error clearing food counters from database: {str(e)}')
+            self.db.rollback()

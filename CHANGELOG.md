@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.2.0...v0.3.0) (2024-12-01)
+
+
+### Features
+
+* convert redis to postgresql database ([48516ee](https://github.com/kusogaki-events/kusogaki-bot/commit/48516ee73e50f31ad66a262405fee020a08c3b94))
+
 ## [0.2.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.1.0...v0.2.0) (2024-11-30)
 
 

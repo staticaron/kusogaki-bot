@@ -11,14 +11,13 @@ package-mode = false
 python = "^3.12"
 discord-py = "^2.4.0"
 python-dotenv = "^1.0.1"
-redis = "^5.2.1"
 sqlalchemy = "^2.0.36"
-psycopg2-binary = "^2.9.10"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.4"
 pre-commit = "^4.0.1"
 poetry-plugin-export = "^1.8.0"
+deptry = "^0.21.2"
 
 [tool.poetry.scripts]
 lint = "scripts.ruff:lint"
@@ -43,3 +42,6 @@ combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+
+[tool.deptry]
+ignore = ["DEP001", "DEP003"]

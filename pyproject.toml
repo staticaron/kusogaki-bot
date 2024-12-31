@@ -46,3 +46,6 @@ combine-as-imports = true
 
 [tool.deptry]
 ignore = ["DEP001", "DEP003"]
+
+[tool.deptry.per_rule_ignores]
+DEP002 = ["psycopg2-binary"]

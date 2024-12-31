@@ -177,14 +177,16 @@ class GTAQuizCog(commands.Cog):
                 progress_bar = self._create_progress_bar(countdown)
 
                 current_desc = message.embeds[0].description
-                starting_player = current_desc.split('Starting player: ')[1].split('\n')[0]
+                starting_player = current_desc.split('Starting player: ')[1].split(
+                    '\n'
+                )[0]
 
                 embed = message.embeds[0]
                 embed.description = (
-                    f"⏰ Game starting in `{countdown}` seconds!\n"
-                    f"{progress_bar}\n"
-                    f"Starting player: {starting_player}\n"
-                    "Type `kuso gtaquiz join` or `kuso gq join` to join the game!"
+                    f'⏰ Game starting in `{countdown}` seconds!\n'
+                    f'{progress_bar}\n'
+                    f'Starting player: {starting_player}\n'
+                    'Type `kuso gtaquiz join` or `kuso gq join` to join the game!'
                 )
 
                 await message.edit(embed=embed)
@@ -349,7 +351,6 @@ class GTAQuizCog(commands.Cog):
     async def handle_round_ended(self, data: dict):
         """Handle round end event."""
         logger.info(f"Round ended for game {data['game_id']}")
-
 
     async def cog_unload(self):
         """Cleanup when the cog is unloaded."""

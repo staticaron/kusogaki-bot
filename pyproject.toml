@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kusogaki_bot"
-version = "0.3.1"
+version = "0.4.0"
 description = "A discord bot for the Kusogaki discord server"
 authors = ["Kusogaki"]
 license = "GPL-3.0-or-later"

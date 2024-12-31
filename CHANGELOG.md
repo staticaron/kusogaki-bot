@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.3.1...v0.4.0) (2024-12-31)
+
+
+### Features
+
+* add help command to bot ([dcf1dfa](https://github.com/kusogaki-events/kusogaki-bot/commit/dcf1dfaae95bcfa4205d9cfd486f1c8c3b12fabd))
+
 ## [0.3.1](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.3.0...v0.3.1) (2024-12-01)
 
 

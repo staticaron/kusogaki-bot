@@ -3,7 +3,7 @@ import sys
 from typing import NoReturn
 
 from config import TOKEN
-from kusogaki_bot.bot import KusogakiBot
+from kusogaki_bot.core.bot import KusogakiBot
 
 logger = logging.getLogger(__name__)
 

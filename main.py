@@ -1,10 +1,23 @@
+import logging
+import sys
+from typing import NoReturn
+
 from config import TOKEN
-from kusogaki_bot.bot import Kusogaki
+from kusogaki_bot.bot import KusogakiBot
+
+logger = logging.getLogger(__name__)
 
 
-def main():
-    bot = Kusogaki()
-    bot.run(TOKEN)
+def main() -> NoReturn:
+    """
+    Initialize and run the Discord bot
+    """
+    try:
+        bot = KusogakiBot()
+        bot.run(TOKEN)
+    except Exception as e:
+        logger.critical(f'Failed to start bot: {str(e)}')
+        sys.exit(1)
 
 
 if __name__ == '__main__':

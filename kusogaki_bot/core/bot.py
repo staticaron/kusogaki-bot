@@ -15,7 +15,7 @@ class KusogakiBot(commands.AutoShardedBot):
     """
 
     DEFAULT_PREFIX = ['kuso ', 'KUSO ', 'Kuso ']
-    COGS_DIRECTORY = Path('kusogaki_bot/cogs')
+    FEATURES_DIRECTORY = Path('kusogaki_bot/features')
 
     def __init__(self) -> None:
         intents = Intents.default()
@@ -37,23 +37,27 @@ class KusogakiBot(commands.AutoShardedBot):
 
     async def load_cogs(self) -> None:
         """
-        Load all cog extensions from the cogs directory
+        Load all cog extensions from the features directory
         Handles errors for individual cog loading
         """
-        if not self.COGS_DIRECTORY.exists():
-            logger.error(f'Cogs directory not found: {self.COGS_DIRECTORY}')
+        if not self.FEATURES_DIRECTORY.exists():
+            logger.error(f'Features directory not found: {self.FEATURES_DIRECTORY}')
             return
 
-        for cog_file in self.COGS_DIRECTORY.glob('*.py'):
-            if cog_file.stem.startswith('__'):
+        for feature_dir in self.FEATURES_DIRECTORY.iterdir():
+            if not feature_dir.is_dir():
+                continue
+
+            cog_file = feature_dir / 'cog.py'
+            if not cog_file.exists():
                 continue
 
             try:
-                cog_path = f'kusogaki_bot.cogs.{cog_file.stem}'
+                cog_path = f'kusogaki_bot.features.{feature_dir.name}.cog'
                 await self.load_extension(cog_path)
-                logger.info(f'Loaded extension: {cog_path}')
+                logger.info(f'Loaded feature: {feature_dir.name} ({cog_path})')
             except Exception as e:
-                logger.error(f'Failed to load extension {cog_path}: {str(e)}')
+                logger.error(f'Failed to load feature {feature_dir.name}: {str(e)}')
 
     async def setup_hook(self) -> None:
         """

@@ -10,6 +10,12 @@ class DatabaseError(BotError):
     pass
 
 
+class DatabaseConnectionError(DatabaseError):
+    """Custom exception for database connection errors"""
+
+    pass
+
+
 class ConfigurationError(BotError):
     """Exception raised for configuration-related errors."""
 

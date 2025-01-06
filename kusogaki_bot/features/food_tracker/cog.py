@@ -23,9 +23,9 @@ class FoodCounterCog(BaseCog):
 
         count = self.service.increment_counter(AWAIZ_USER_ID)
         description = f"""
-            {awaiz.mention}, your caseoh is showing! Adding to the total amount of times you've mentioned food.
+{awaiz.mention}, your caseoh is showing! Adding to the total amount of times you've mentioned food.
 
-            **Total is now**: {count}
+**Total is now**: {count}
             """
 
         embed, file = await self.create_embed(
@@ -46,7 +46,7 @@ class FoodCounterCog(BaseCog):
 
         count = self.service.get_count(AWAIZ_USER_ID)
         description = f"""
-            He's eaten everything. {awaiz.mention} has talked about food {count} time(s). I guess he'll start eating drywall soon.
+He's eaten everything. {awaiz.mention} has talked about food {count} time(s). I guess he'll start eating drywall soon.
             """
 
         embed, file = await self.create_embed(

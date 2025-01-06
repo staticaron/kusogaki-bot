@@ -5,7 +5,7 @@ from discord import Embed, File
 
 
 class EmbedColor(int, Enum):
-    NORMAL = 0x2B2D31
+    NORMAL = 0x6A1B9A
     INFORMATION = 0x546E7A
     WARNING = 0xE67E22
     ERROR = 0xE74C3C

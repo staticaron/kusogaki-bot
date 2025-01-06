@@ -44,10 +44,10 @@ class PingCog(BaseCog):
 
         await ctx.send(embed=embed, file=file)
 
-    @commands.command(name='cheat', description="Check the bot's latency")
+    @commands.command(name='cheat', description="Get the bot's fake latency")
     async def cheat(self, ctx: commands.Context):
         """
-        Simple ping command to check if the bot is responsive
+        Simple ping command to check if the bot is responsive but, by cheating
 
         Args:
             ctx (commands.Context): The command context

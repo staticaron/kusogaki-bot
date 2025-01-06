@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 from discord import Embed, File
 
@@ -18,7 +19,9 @@ class EmbedType(Enum):
     ERROR = EmbedColor.ERROR
 
 
-async def get_embed(type: EmbedType, title: str, description: str) -> Embed:
+async def get_embed(
+    type: EmbedType, title: str, description: str, thumbnail_path: Optional[str] = None
+) -> Embed:
     """
     Create a Discord embed with specified type, title, and description.
 
@@ -26,7 +29,7 @@ async def get_embed(type: EmbedType, title: str, description: str) -> Embed:
         type (EmbedType): The type of embed which determines its color
         title (str): The embed title
         description (str): The embed description
-        thumbnail (bool, optional): Whether to include a thumbnail. Defaults to False
+        thumbnail_path (Optional[str]): Path to thumbnail image. If None, uses default image.
 
     Returns:
         Embed: A configured Discord embed
@@ -38,7 +41,11 @@ async def get_embed(type: EmbedType, title: str, description: str) -> Embed:
         timestamp=datetime.now(),
     )
 
-    file = File('static/fern-pout.png', filename='fern-pout.png')
-    embed.set_thumbnail(url='attachment://fern-pout.png')
+    if thumbnail_path:
+        file = File(thumbnail_path, filename=thumbnail_path.split('/')[-1])
+        embed.set_thumbnail(url=f'attachment://{thumbnail_path.split("/")[-1]}')
+    else:
+        file = File('static/fern-pout.png', filename='fern-pout.png')
+        embed.set_thumbnail(url='attachment://fern-pout.png')
 
     return embed, file

@@ -3,6 +3,7 @@
         "dotenv",
         "kuso",
         "Kusogaki",
+        "onupdate",
         "poolclass",
         "sessionmaker"
     ]

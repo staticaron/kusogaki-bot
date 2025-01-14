@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Tuple
 
 from discord import Embed, File
+
+from kusogaki_bot.shared.services.image_service import image_service
 
 
 class EmbedColor(int, Enum):
@@ -21,7 +23,7 @@ class EmbedType(Enum):
 
 async def get_embed(
     type: EmbedType, title: str, description: str, thumbnail_path: Optional[str] = None
-) -> Embed:
+) -> Tuple[Embed, Optional[File]]:
     """
     Create a Discord embed with specified type, title, and description.
 
@@ -32,7 +34,7 @@ async def get_embed(
         thumbnail_path (Optional[str]): Path to thumbnail image. If None, uses default image.
 
     Returns:
-        Embed: A configured Discord embed
+        Tuple[Embed, Optional[File]]: A configured Discord embed and optional file attachment
     """
     embed = Embed(
         title=title,
@@ -42,10 +44,12 @@ async def get_embed(
     )
 
     if thumbnail_path:
-        file = File(thumbnail_path, filename=thumbnail_path.split('/')[-1])
-        embed.set_thumbnail(url=f'attachment://{thumbnail_path.split("/")[-1]}')
+        file = await image_service.get_image_file(thumbnail_path)
+        if file:
+            embed.set_thumbnail(url=f'attachment://{file.filename}')
     else:
-        file = File('static/fern-pout.png', filename='fern-pout.png')
-        embed.set_thumbnail(url='attachment://fern-pout.png')
+        file = await image_service.get_image_file('static/fern-pout.png')
+        if file:
+            embed.set_thumbnail(url=f'attachment://{file.filename}')
 
     return embed, file

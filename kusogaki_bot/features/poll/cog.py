@@ -31,8 +31,8 @@ class PollCog(BaseCog):
         Args:
             ctx (commands.Context): The command context
             question (str): The question you want to ask
-            duration (int):
-            multiple (bool): _description_
+            duration (int): The duration of the poll (hours)
+            multiple (bool): Whether to allow multiple options
         """
 
         if not await check_permission(ctx):

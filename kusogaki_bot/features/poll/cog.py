@@ -1,11 +1,12 @@
 import asyncio
 import logging
+
 from discord.ext import commands
 
 from kusogaki_bot.core import BaseCog, KusogakiBot
-from kusogaki_bot.shared.utils.embeds import EmbedType
+from kusogaki_bot.features.poll.service import PollError, PollService
 from kusogaki_bot.shared.utils.permissions import check_permission
-from kusogaki_bot.features.poll.service import PollService, PollError
+
 
 class PollCog(BaseCog):
     """
@@ -16,27 +17,26 @@ class PollCog(BaseCog):
         super().__init__(bot)
         self.poll_service = PollService()
 
-    @commands.command(name='poll', description="Create a new poll")
-    async def create_poll(        self,
+    @commands.command(name='poll', description='Create a new poll')
+    async def create_poll(
+        self,
         ctx: commands.Context,
         question: str,
         duration: int,
         multiple: bool,
-        *options: str,):
+        *options: str,
+    ):
         """Create a new poll. Can be used by staff/dev team
 
         Args:
             ctx (commands.Context): The command context
             question (str): The question you want to ask
-            duration (int): 
+            duration (int):
             multiple (bool): _description_
         """
 
         if not await check_permission(ctx):
-            return await ctx.send(
-                "You can only create polls if you're a staff member."
-            )
-
+            return await ctx.send("You can only create polls if you're a staff member.")
 
         try:
             self.poll_service.validate_options(options)
@@ -49,14 +49,12 @@ class PollCog(BaseCog):
         except PollError as e:
             await ctx.send(str(e))
 
-    @commands.command(name='endpoll', description="End an active poll")
+    @commands.command(name='endpoll', description='End an active poll')
     async def end_poll(self, ctx: commands.Context, *, question: str):
         """End an active poll."""
 
         if not await check_permission(ctx):
-            return await ctx.send(
-                "You can only end polls if you're a staff member."
-            )
+            return await ctx.send("You can only end polls if you're a staff member.")
 
         try:
             poll, _ = self.poll_service.get_poll(question)

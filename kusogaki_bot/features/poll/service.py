@@ -80,7 +80,7 @@ class PollService:
 
     def remove_poll(self, question: str) -> None:
         """Remove a poll from active polls."""
-        
+
         if question not in self.active_polls:
             raise PollError('No active poll found with that question.')
         return self.active_polls.pop(question)

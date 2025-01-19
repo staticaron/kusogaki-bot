@@ -1,7 +1,9 @@
+from typing import Any, Callable
+
 from discord.ext import commands
 from discord.ext.commands import CheckFailure, Context
 from discord.utils import get
-from typing import Callable, Any
+
 from config import STAFF_ROLE_ID
 
 

@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord.ext.commands import CheckFailure, Context
 from discord.utils import get
-
+from typing import Callable, Any
 from config import STAFF_ROLE_ID
 
 
@@ -11,27 +11,22 @@ class MissingRequiredRole(CheckFailure):
     pass
 
 
-def has_required_permission():
+def has_required_permission() -> Callable[[Context], Any]:
     """Check if the user is either in a Discord Developer Portal team or has the staff role."""
 
-    async def predicate(ctx):
+    async def predicate(ctx) -> bool:
         member = ctx.author
         bot = ctx.bot
 
         app_info = await bot.application_info()
-        is_dev_team = False
         if app_info.team:
             team_member_ids = [m.id for m in app_info.team.members]
-            is_dev_team = member.id in team_member_ids
-
-            if is_dev_team:
+            if member.id in team_member_ids:
                 return True
 
         staff_role = get(ctx.guild.roles, id=STAFF_ROLE_ID)
-        if staff_role:
-            has_staff = staff_role in member.roles
-            if has_staff:
-                return True
+        if staff_role and staff_role in member.roles:
+            return True
 
         raise MissingRequiredRole(
             'You must be either a staff member or part of the Developer Portal team.'
@@ -46,15 +41,12 @@ async def check_permission(ctx: Context) -> bool:
 
     Args:
         ctx: The command context
-        channel_id: The ID of the allowed channel
 
     Returns:
         bool: True if user has permission or is in allowed channel
     """
     try:
         check = has_required_permission().predicate
-        has_permission = await check(ctx)
-        if has_permission:
-            return True
+        return await check(ctx)
     except MissingRequiredRole:
-        pass
+        return False

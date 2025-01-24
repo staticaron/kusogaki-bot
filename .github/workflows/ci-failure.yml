@@ -29,11 +29,15 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            import { context } from '@actions/github';
+
             const prNumber = ${{ steps.get-pr.outputs.result }};
             const workflowUrl = '${{ github.event.workflow_run.html_url }}';
+            const workflowName = context.eventName;
 
-            const message = `❌ CI checks failed for this PR.\n\n` +
-                          `Please check the [workflow run](${workflowUrl}) for more details.`;
+            const message = `❌ The job `${workflowName}` failed during the most recent run.
+
+            Please check the [workflow run](${workflowUrl}) for more details.`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,

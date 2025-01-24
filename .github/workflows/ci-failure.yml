@@ -31,7 +31,7 @@ jobs:
           script: |
             const prNumber = ${{ steps.get-pr.outputs.result }};
             const workflowUrl = '${{ github.event.workflow_run.html_url }}';
-            const workflowName = context.eventName;
+            const workflowName = '${{ github.event.workflow_run.name }}';
 
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -50,7 +50,7 @@ jobs:
               }
             }
 
-            const message = `❌ The job \`${workflowName}\` failed during the most recent run.
+            const message = `❌ The workflow \`${workflowName}\` failed during the most recent run.
 
             Please check the [workflow run](${workflowUrl}) for more details.`;
 

@@ -38,6 +38,16 @@ To run the bot, use the following command in the terminal:
 py main.py
 ```
 
+#### Development Mode
+
+The bot includes a development mode with hot-reloading capability. When enabled, it watches your code files and automatically reloads modules when changes are detected. To use it:
+
+1. Start the bot
+2. Use the `kuso dev` command to toggle development mode
+3. Make changes to your code - the bot will automatically reload affected modules
+
+This eliminates the need to restart the bot after each code change during development.
+
 ### Bot Setup
 
 > [!IMPORTANT]

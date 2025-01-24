@@ -50,7 +50,7 @@ class GTAGameService:
         self.repository = repository
         self.games: Dict[int, GameState] = {}
         self.used_image_ids: Dict[int, set[int]] = {}
-        self.LOADING_TIME = 5
+        self.LOADING_TIME = 15
         self.ROUND_TIME = 10
         self.MAX_OPTIONS = 4
         self.EASY_THRESHOLD = 2

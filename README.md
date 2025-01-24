@@ -23,6 +23,13 @@ Base command: `gtaquiz` (alias: `gq`)
 * `kuso gtaquiz leaderboard`: View global rankings
 * `kuso gtaquiz score`: Check your stats
 
+### Food Counter Commands
+* `kuso awaiz` (alias: `caseoh`): Manually increment the food mention counter for Awaiz
+* `kuso awaizcount` (alias: `drywall`): Display current food mention count for Awaiz
+
+> [!NOTE]
+> The bot also automatically tracks food-related words in messages by awaiz and increments the counter when detected.
+
 ### Poll Commands
 > [!IMPORTANT]
 > Poll commands are only usable by Kusogaki staff.
@@ -35,6 +42,3 @@ Base command: `gtaquiz` (alias: `gq`)
 * `kuso endpoll <question>`: End an active poll
 * `kuso listpolls`: List all active polls
 
-### Food Counter Commands
-* `kuso awaiz` (alias: `caseoh`): Increment food mention counter for Awaiz
-* `kuso awaizcount` (alias: `drywall`): Display current food mention count for Awaiz

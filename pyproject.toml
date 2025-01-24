@@ -21,10 +21,6 @@ pre-commit = "^4.0.1"
 poetry-plugin-export = "^1.8.0"
 deptry = "^0.22.0"
 
-[tool.poetry.scripts]
-lint = "scripts.ruff:lint"
-format = "scripts.ruff:format"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

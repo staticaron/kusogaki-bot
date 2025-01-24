@@ -328,7 +328,7 @@ class GTAQuizCog(BaseCog):
                 description = "You haven't played any games yet!"
             else:
                 description = (
-                    f'Rank: #{entry.place}\n' f'Highest Score: {entry.highest_score}'
+                    f'Rank: #{entry.place}\nHighest Score: {entry.highest_score}'
                 )
 
             embed, file = await self.create_embed(
@@ -361,16 +361,16 @@ class GTAQuizCog(BaseCog):
 
                 total_width = 20
                 filled = round((countdown / self.service.LOADING_TIME) * total_width)
-                progress_bar = f"`{'█' * filled}{'░' * (total_width - filled)}`"
+                progress_bar = f'`{"█" * filled}{"░" * (total_width - filled)}`'
 
                 embed, file = await self.create_embed(
                     type=EmbedType.NORMAL,
                     title='🎮 Guess The Anime Quiz',
                     description=(
-                        f"Game starting in `{countdown}` seconds!\n"
-                        f"{progress_bar}\n"
-                        f"Starting player: {message.embeds[0].description.split('Starting player: ')[1].split('\n')[0]}\n\n"
-                        "Type `kuso gq join` to join!"
+                        f'Game starting in `{countdown}` seconds!\n'
+                        f'{progress_bar}\n'
+                        f'Starting player: {message.embeds[0].description.split("Starting player: ")[1].split("\n")[0]}\n\n'
+                        'Type `kuso gq join` to join!'
                     ),
                 )
 
@@ -677,7 +677,7 @@ class GTAQuizCog(BaseCog):
         else:
             embed = discord.Embed(title='🎯 Guess The Anime!', color=EmbedColor.NORMAL)
 
-            option_text = '\n'.join(f'{i+1}️⃣ {opt}' for i, opt in enumerate(options))
+            option_text = '\n'.join(f'{i + 1}️⃣ {opt}' for i, opt in enumerate(options))
             embed.add_field(name='Options', value=option_text, inline=False)
 
         embed.add_field(name='Players', value=create_player_status(), inline=False)

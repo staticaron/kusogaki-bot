@@ -78,7 +78,7 @@ class ImageUrlHandler:
             return url
 
         if not cls._has_image_extension(url):
-            url = f"{url.rstrip('/')}.png"
+            url = f'{url.rstrip("/")}.png'
 
         return url
 

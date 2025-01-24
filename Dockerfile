@@ -8,11 +8,8 @@ COPY pyproject.toml poetry.lock* ./
 
 RUN poetry config virtualenvs.create false
 
-RUN poetry install --no-dev
+RUN poetry install --only main
 
 COPY . .
-
-ENV TOKEN=${TOKEN}
-ENV STAFF_ROLE_ID=${STAFF_ROLE_ID}
 
 CMD ["python", "main.py"]

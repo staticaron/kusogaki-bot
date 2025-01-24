@@ -29,7 +29,7 @@ kuso help poll
 The GTA Quiz Game allows users to participate in GTA style quiz using all the previous season's images
 
 **Subcommands:**
-- `start [difficulty]` - Start a new game session. If difficulty is specified (easy/medium/hard), only images of that difficulty will appear. Otherwise, difficulty will behave like the actual GTA game (on anilist)
+- `start [difficulty]` - Start a new game session. If difficulty is specified (easy/medium/hard), only images of that difficulty will appear. Leave it unspecified to experience progressive difficulty similar to GTA's adaptive system on AniList
 - `join` - Join an ongoing game before it starts
 - `stop` - Ends the current game session
 - `leaderboard` - Display global leaderboard with top players

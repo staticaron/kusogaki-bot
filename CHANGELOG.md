@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.5.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.4.0...v0.5.0) (2025-01-24)
+
+
+### Features
+
+* add central core exception classes ([c09db68](https://github.com/kusogaki-events/kusogaki-bot/commit/c09db681ca0f7b43faefdc61039648ba034c424d))
+* add central core exception classes ([28fd2fc](https://github.com/kusogaki-events/kusogaki-bot/commit/28fd2fc1f309d3fdf861c3ba2330f9713e3d5eca))
+* add core database connection file ([db9a590](https://github.com/kusogaki-events/kusogaki-bot/commit/db9a5904c9a00b6ff135cb7893552de925d08905))
+* add core database connection file ([5a22431](https://github.com/kusogaki-events/kusogaki-bot/commit/5a22431419bbfc422ed7bef4341ec92f8f23a394))
+* add new base cog for all cogs ([7a26eaa](https://github.com/kusogaki-events/kusogaki-bot/commit/7a26eaa334303aadeb5f6ca9d182a778f5c7677c))
+* add new base cog for all cogs ([2958db4](https://github.com/kusogaki-events/kusogaki-bot/commit/2958db49dc3d084e689519bec77f73ae18ab0568))
+* add new gta game logic ([9989f6d](https://github.com/kusogaki-events/kusogaki-bot/commit/9989f6d82ff63909f91118bd1d55fb94eb8ff76f))
+* add new gta game logic ([434c542](https://github.com/kusogaki-events/kusogaki-bot/commit/434c542b299e7b7adfa04382d0786c96bccee953))
+* add updated awaiz food tracker ([3e5ce0c](https://github.com/kusogaki-events/kusogaki-bot/commit/3e5ce0c269935e59fad9fe7a87bd9da149e86536))
+* add updated awaiz food tracker ([7f21476](https://github.com/kusogaki-events/kusogaki-bot/commit/7f21476c81c2af1f866adbbcb1f9eebb832191d2))
+* make food tracker automatic ([95b2827](https://github.com/kusogaki-events/kusogaki-bot/commit/95b282721d529ef92c80325771a5adc0c4b0b446))
+* make food tracker automatic ([4d75ccd](https://github.com/kusogaki-events/kusogaki-bot/commit/4d75ccd0634b3ae2b28c14634da12629558be152))
+* migration of poll-command logic to new structure ([130a511](https://github.com/kusogaki-events/kusogaki-bot/commit/130a511d4f8bf62a4736bd2bd044dc4a12a9e2f9))
+* reload command ([f5aff4d](https://github.com/kusogaki-events/kusogaki-bot/commit/f5aff4dbf917ac59a8ecfa2d91d41fe117fc6ec4))
+
+
+### Bug Fixes
+
+* fix typo in ci failure workflow ([28fffba](https://github.com/kusogaki-events/kusogaki-bot/commit/28fffba77b5e54c49cd88f0e4e3e09c396ed7ee8))
+* incomplete docstring ([18f2c10](https://github.com/kusogaki-events/kusogaki-bot/commit/18f2c10dcff2c9bf7bc51afc35ee916e16246fba))
+* linting errors ([08b2e9a](https://github.com/kusogaki-events/kusogaki-bot/commit/08b2e9a7ae206ebed61f4bcc81ce33d845e3db28))
+* linting issues ([41caecb](https://github.com/kusogaki-events/kusogaki-bot/commit/41caecb717cff84fda5cfe5dbe33aca470370940))
+* remove import from ci failure workflow ([7605b52](https://github.com/kusogaki-events/kusogaki-bot/commit/7605b528e62f1327a9a86840b4cfbd4578e42241))
+
+
+### Documentation
+
+* add ADR for project restructuring to feature-based architecture ([93e2356](https://github.com/kusogaki-events/kusogaki-bot/commit/93e23562a3e2c1e2462cfdee740ff367fc0564e9))
+* add ADR for project restructuring to feature-based architecture ([4340a8e](https://github.com/kusogaki-events/kusogaki-bot/commit/4340a8ec43b68be904d6304c7e8dbd4698eada0a))
+* add development mode to contributing guidelines ([46c1251](https://github.com/kusogaki-events/kusogaki-bot/commit/46c12510f34ed3da4f8e4308072667fc7e7c50d0))
+* add mention of auto food tracking for awaiz in readme ([f10af81](https://github.com/kusogaki-events/kusogaki-bot/commit/f10af812b900dc2f316f346b90b6fa4af2fd8c00))
+* fix typo on readme ([2472aec](https://github.com/kusogaki-events/kusogaki-bot/commit/2472aecadb1dd82dfac2157a528be0567d8f8f97))
+* update readme to have current commands ([d17fb26](https://github.com/kusogaki-events/kusogaki-bot/commit/d17fb260aafe81e645da0e620d94863a05dc5dc5))
+
 ## [0.4.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.3.1...v0.4.0) (2024-12-31)
 
 

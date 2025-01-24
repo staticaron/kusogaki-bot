@@ -19,7 +19,7 @@ watchdog = "^6.0.0"
 ruff = "^0.8.6"
 pre-commit = "^4.0.1"
 poetry-plugin-export = "^1.8.0"
-deptry = "^0.21.2"
+deptry = "^0.22.0"
 
 [tool.poetry.scripts]
 lint = "scripts.ruff:lint"

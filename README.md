@@ -17,9 +17,11 @@ Refer to [CONTRIBUTING.md](https://github.com/kusogaki-events/kusogaki-bot/blob/
 
 ### GTA Quiz Game Commands
 Base command: `gtaquiz` (alias: `gq`)
-* `kuso gtaquiz start`: Start a new GTA quiz game
+* `kuso gtaquiz start [difficulty]`: Start a new game session. If difficulty is specified (easy/medium/hard), only images of that difficulty will appear. Leave it unspecified to experience progressive difficulty similar to GTA's adaptive system on AniList.
 * `kuso gtaquiz join`: Join an ongoing game before it starts
 * `kuso gtaquiz stop`: Stop the current game
+* `kuso gtaquiz leaderboard`: View global rankings
+* `kuso gtaquiz score`: Check your stats
 
 ### Poll Commands
 > [!IMPORTANT]
@@ -32,34 +34,6 @@ Base command: `gtaquiz` (alias: `gq`)
   * `options`: Poll options (space-separated)
 * `kuso endpoll <question>`: End an active poll
 * `kuso listpolls`: List all active polls
-
-### Reminder Commands
-Base command: `reminder` (alias: `rem`)
-* `kuso reminder set <time> <message>`: Set a new reminder
-  * Time format: `1h30m`, `2d`, `30m`
-  * Examples:
-    * `reminder set 1h30m Take a break`
-    * `reminder set 2d Check emails`
-* `kuso reminder list`: List all your active reminders
-* `kuso reminder delete <index>` (aliases: `del`, `remove`): Delete a reminder by its index number
-
-### Thread Commands
-> [!IMPORTANT]
-> Thread commands require the "Manage Threads" permission which is only given to certain people.
-
-Base command: `thread`
-* `kuso thread create <role> <name> [message]`: Create a private thread immediately
-  * `role`: The role that can access the thread
-  * `name`: Name of the thread
-  * `message`: Optional initial message in the thread
-  * Example:
-    * `thread create @Kaoru Cult "romance manga" "The Fragrant Flower Blooms With Dignity slaps"`
-* `kuso thread schedule <role> <time> <name> [message]`: Schedule a private thread for later
-  * Time format: `1h30m`, `2d`, `30m`
-  * Example:
-    * `thread schedule @Book Club 2h "The Gunslinger" "Thread for The Gunslinger Discussion!"`
-* `kuso thread list`: List all scheduled threads
-* `kuso thread delete <id>` (aliases: `del`, `remove`): Delete a scheduled thread by its ID
 
 ### Food Counter Commands
 * `kuso awaiz` (alias: `caseoh`): Increment food mention counter for Awaiz

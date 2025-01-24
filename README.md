@@ -41,4 +41,3 @@ Base command: `gtaquiz` (alias: `gq`)
   * `options`: Poll options (space-separated)
 * `kuso endpoll <question>`: End an active poll
 * `kuso listpolls`: List all active polls
-

@@ -19,7 +19,7 @@ watchdog = "^6.0.0"
 ruff = "^0.9.3"
 pre-commit = "^4.0.1"
 poetry-plugin-export = "^1.8.0"
-deptry = "^0.22.0"
+deptry = "^0.23.0"
 
 [build-system]
 requires = ["poetry-core"]

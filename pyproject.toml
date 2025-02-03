@@ -16,7 +16,7 @@ psycopg2-binary = "^2.9.10"
 watchdog = "^6.0.0"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.9.3"
+ruff = "^0.9.4"
 pre-commit = "^4.0.1"
 poetry-plugin-export = "^1.8.0"
 deptry = "^0.23.0"

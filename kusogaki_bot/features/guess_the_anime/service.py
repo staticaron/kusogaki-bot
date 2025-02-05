@@ -14,8 +14,7 @@ from kusogaki_bot.features.guess_the_anime.data import (
     LeaderboardEntry,
     PlayerState,
 )
-from kusogaki_bot.shared import ImagePreloader, ImageUrlHandler
-from kusogaki_bot.shared.services import image_service
+from kusogaki_bot.shared import ImagePreloader, ImageUrlHandler, image_service
 
 
 def ensure_direct_image_url(url: str) -> str:

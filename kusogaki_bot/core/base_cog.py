@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 
 from kusogaki_bot.core.bot import KusogakiBot
-from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
+from kusogaki_bot.shared import EmbedType, get_embed
 
 logger = logging.getLogger(__name__)
 

@@ -22,7 +22,7 @@ class AnswerView(discord.ui.View):
         cog (GTAQuizCog): The cog instance that owns this view
         correct_answer (str): The correct answer for the current question
         processing_lock (asyncio.Lock): Lock to prevent concurrent answer processing
-        round_results: Results for player's answers to current question
+        round_results (list[str]): Results for player's answers to current question
     """
 
     def __init__(
@@ -536,7 +536,7 @@ class GTAQuizCog(BaseCog):
             Exception: If there's an error processing the answer
 
         Returns:
-            result: string with player feedback to be sent at the end of the round
+            result (list[str]): player feedback to be sent at the end of the round
         """
         game_state = None
         results = []

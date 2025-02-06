@@ -85,7 +85,8 @@ class AnswerView(discord.ui.View):
 
                     self.round_results += await self.cog._handle_answer(
                         interaction, answer, self.correct_answer
-                        )
+                    )
+                    await interaction.response.defer()
 
             except Exception as e:
                 logger.error(f'Error in button callback: {e}', exc_info=True)
@@ -486,9 +487,7 @@ class GTAQuizCog(BaseCog):
 
                 timed_out_players = self.service.handle_game_timeout(channel_id)
                 if timed_out_players:
-                    timeout_messages = [
-                        f"⏰ Time's up!"
-                    ]
+                    timeout_messages = ["⏰ Time's up!"]
                     for player_name, lives in timed_out_players:
                         hearts = '❤️' * lives
                         status = (
@@ -575,10 +574,14 @@ class GTAQuizCog(BaseCog):
             else:
                 player = game_state.players[interaction.user.id]
                 if is_eliminated:
-                    results.append(f'❌ {interaction.user.name} got it wrong and has been eliminated! 💀!')
+                    results.append(
+                        f'❌ {interaction.user.name} got it wrong and has been eliminated! 💀!'
+                    )
                 else:
                     hearts = '❤️' * player.lives
-                    results.append(f'❌ {interaction.user.name} got it wrong and has {hearts} remaining.')
+                    results.append(
+                        f'❌ {interaction.user.name} got it wrong and has {hearts} remaining.'
+                    )
 
         except Exception as e:
             logger.error(f'Error handling answer: {e}', exc_info=True)

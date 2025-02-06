@@ -22,6 +22,7 @@ class AnswerView(discord.ui.View):
         cog (GTAQuizCog): The cog instance that owns this view
         correct_answer (str): The correct answer for the current question
         processing_lock (asyncio.Lock): Lock to prevent concurrent answer processing
+        round_results: Results for player's answers to current question
     """
 
     def __init__(
@@ -39,6 +40,7 @@ class AnswerView(discord.ui.View):
         self.cog = cog
         self.correct_answer = correct_answer
         self.processing_lock = asyncio.Lock()
+        self.round_results = [f'The correct answer was: **{correct_answer}**']
 
         for i, option in enumerate(options):
             button = discord.ui.Button(
@@ -81,9 +83,9 @@ class AnswerView(discord.ui.View):
 
                     game_state.answered_players.add(interaction.user.id)
 
-                    await self.cog._handle_answer(
+                    self.round_results += await self.cog._handle_answer(
                         interaction, answer, self.correct_answer
-                    )
+                        )
 
             except Exception as e:
                 logger.error(f'Error in button callback: {e}', exc_info=True)
@@ -485,7 +487,7 @@ class GTAQuizCog(BaseCog):
                 timed_out_players = self.service.handle_game_timeout(channel_id)
                 if timed_out_players:
                     timeout_messages = [
-                        f"⏰ Time's up! The correct answer was: **{correct_answer}**"
+                        f"⏰ Time's up!"
                     ]
                     for player_name, lives in timed_out_players:
                         hearts = '❤️' * lives
@@ -498,6 +500,8 @@ class GTAQuizCog(BaseCog):
                             f"⚠️ {player_name} didn't answer and {status}"
                         )
                     await channel.send('\n'.join(timeout_messages))
+
+                await channel.send('\n'.join(view.round_results))
 
                 is_game_over, final_scores = self.service.check_game_over(channel_id)
                 if is_game_over:
@@ -514,7 +518,7 @@ class GTAQuizCog(BaseCog):
 
     async def _handle_answer(
         self, interaction: discord.Interaction, answer: str, correct_answer: str
-    ) -> None:
+    ) -> list[str] | None:
         """
         Process a player's answer and provide feedback.
 
@@ -531,8 +535,12 @@ class GTAQuizCog(BaseCog):
 
         Raises:
             Exception: If there's an error processing the answer
+
+        Returns:
+            result: string with player feedback to be sent at the end of the round
         """
         game_state = None
+        results = []
         try:
             game_state = self.service.get_game(interaction.channel.id)
             if not game_state:
@@ -560,24 +568,17 @@ class GTAQuizCog(BaseCog):
                 interaction.channel.id, interaction.user.id, answer, correct_answer
             )
 
-            response = []
             if is_correct:
-                response.append(f'✅ {interaction.user.name} got it right!')
+                results.append(f'✅ {interaction.user.name} got it right!')
                 if new_high_score:
-                    response.append(f'🏆 New high score: {new_high_score}!')
+                    results.append(f'🏆 New high score: {new_high_score}!')
             else:
                 player = game_state.players[interaction.user.id]
                 if is_eliminated:
-                    response.append(
-                        f'❌ Wrong answer! {interaction.user.name} has been eliminated! 💀'
-                    )
+                    results.append(f'❌ {interaction.user.name} got it wrong and has been eliminated! 💀!')
                 else:
                     hearts = '❤️' * player.lives
-                    response.append(
-                        f'❌ Wrong answer! {interaction.user.name} has {hearts} remaining.'
-                    )
-
-            await interaction.response.send_message('\n'.join(response))
+                    results.append(f'❌ {interaction.user.name} got it wrong and has {hearts} remaining.')
 
         except Exception as e:
             logger.error(f'Error handling answer: {e}', exc_info=True)
@@ -592,6 +593,7 @@ class GTAQuizCog(BaseCog):
         finally:
             if game_state:
                 game_state.processing_answers = False
+            return results
 
     async def _show_game_results(
         self, channel: discord.TextChannel, final_scores: Optional[Dict[int, int]]

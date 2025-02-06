@@ -40,4 +40,4 @@ combine-as-imports = true
 ignore = ["DEP001", "DEP003"]
 
 [tool.deptry.per_rule_ignores]
-DEP002 = ["psycopg2-binary"]
+DEP002 = ["psycopg2-binary", "audioop-lts", "deptry"]

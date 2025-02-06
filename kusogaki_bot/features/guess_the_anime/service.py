@@ -136,6 +136,7 @@ class GTAGameService:
             game.answered_players.clear()
             game.timed_out_players.clear()
             game.processing_answers = False
+            game.round_feedback = []
 
     def stop_game(self, channel_id: int, user_id: int) -> CommandResult:
         """

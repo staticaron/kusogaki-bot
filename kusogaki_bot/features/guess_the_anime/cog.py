@@ -84,6 +84,7 @@ class AnswerView(discord.ui.View):
                     await self.cog._handle_answer(
                         interaction, answer, self.correct_answer
                     )
+                    await interaction.response.defer()
 
             except Exception as e:
                 logger.error(f'Error in button callback: {e}', exc_info=True)
@@ -445,9 +446,8 @@ class GTAQuizCog(BaseCog):
                         )
                         continue
 
-                    current_round_difficulty = self.service.get_current_difficulty(
-                        self.service.get_game(channel_id)
-                    )
+                    game = self.service.get_game(channel_id)
+                    current_round_difficulty = self.service.get_current_difficulty(game)
 
                     logger.info(f'Round started - Channel: {channel_id}')
                     logger.info(f'Correct answer is: {correct_answer}')
@@ -484,9 +484,7 @@ class GTAQuizCog(BaseCog):
 
                 timed_out_players = self.service.handle_game_timeout(channel_id)
                 if timed_out_players:
-                    timeout_messages = [
-                        f"⏰ Time's up! The correct answer was: **{correct_answer}**"
-                    ]
+                    timeout_messages = ["⏰ Time's up!"]
                     for player_name, lives in timed_out_players:
                         hearts = '❤️' * lives
                         status = (
@@ -498,6 +496,8 @@ class GTAQuizCog(BaseCog):
                             f"⚠️ {player_name} didn't answer and {status}"
                         )
                     await channel.send('\n'.join(timeout_messages))
+
+                await channel.send('\n'.join(game.round_feedback))
 
                 is_game_over, final_scores = self.service.check_game_over(channel_id)
                 if is_game_over:
@@ -554,30 +554,36 @@ class GTAQuizCog(BaseCog):
                 game_state.answered_players.remove(interaction.user.id)
                 return
 
+            if not game_state.round_feedback:
+                game_state.round_feedback.append(
+                    f'The correct answer was: **{correct_answer}**'
+                )
+
             game_state.processing_answers = True
 
             is_correct, is_eliminated, new_high_score = self.service.process_answer(
                 interaction.channel.id, interaction.user.id, answer, correct_answer
             )
 
-            response = []
             if is_correct:
-                response.append(f'✅ {interaction.user.name} got it right!')
+                game_state.round_feedback.append(
+                    f'✅ {interaction.user.name} got it right!'
+                )
                 if new_high_score:
-                    response.append(f'🏆 New high score: {new_high_score}!')
+                    game_state.round_feedback.append(
+                        f'🏆 New high score: {new_high_score}!'
+                    )
             else:
                 player = game_state.players[interaction.user.id]
                 if is_eliminated:
-                    response.append(
-                        f'❌ Wrong answer! {interaction.user.name} has been eliminated! 💀'
+                    game_state.round_feedback.append(
+                        f'❌ {interaction.user.name} got it wrong and has been eliminated! 💀!'
                     )
                 else:
                     hearts = '❤️' * player.lives
-                    response.append(
-                        f'❌ Wrong answer! {interaction.user.name} has {hearts} remaining.'
+                    game_state.round_feedback.append(
+                        f'❌ {interaction.user.name} got it wrong and has {hearts} remaining.'
                     )
-
-            await interaction.response.send_message('\n'.join(response))
 
         except Exception as e:
             logger.error(f'Error handling answer: {e}', exc_info=True)

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.1...v0.5.2) (2025-02-08)
+
+
+### Bug Fixes
+
+* add correct answer feedback if no player answers ([6848e42](https://github.com/kusogaki-events/kusogaki-bot/commit/6848e426d9695b70d78da25bc24b3cf447100726))
+
 ## [0.5.1](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.0...v0.5.1) (2025-02-08)
 
 

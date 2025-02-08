@@ -448,6 +448,9 @@ class GTAQuizCog(BaseCog):
 
                     game = self.service.get_game(channel_id)
                     current_round_difficulty = self.service.get_current_difficulty(game)
+                    game.round_feedback.append(
+                        f'The correct answer was: **{correct_answer}**'
+                    )
 
                     logger.info(f'Round started - Channel: {channel_id}')
                     logger.info(f'Correct answer is: {correct_answer}')
@@ -553,11 +556,6 @@ class GTAQuizCog(BaseCog):
                 )
                 game_state.answered_players.remove(interaction.user.id)
                 return
-
-            if not game_state.round_feedback:
-                game_state.round_feedback.append(
-                    f'The correct answer was: **{correct_answer}**'
-                )
 
             game_state.processing_answers = True
 

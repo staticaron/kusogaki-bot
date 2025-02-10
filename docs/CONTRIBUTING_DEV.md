@@ -13,12 +13,12 @@ So, you're making code changes: _bold_. Well, there's a bit of setup involved to
 
 Currently, this project is using version `3.12`.
 
-### Poetry
+### UV
 
-Poetry is the tool we use for dependency management (similar to pip) in this project. While poetry isn't mandatory (there's a requirements.txt file), _**it's highly recommended**_ as it makes working with dependencies and environments more straightforward. You can download it [here](https://python-poetry.org/) if you don't already have it.
+uv is the tool we use for dependency management in this project. It's significantly faster than pip and other package managers, making dependency installation and environment management more efficient. While uv isn't mandatory, _**it's highly recommended**_ as it makes working with dependencies and environments more straightforward.
 
 > [!NOTE]
-> This guide will assume you're using poetry. Please follow a similar approach with other dependency management tools for the steps that require it.
+> This guide will assume you're using uv. Please follow a similar approach with other dependency management tools for the steps that require it.
 
 ## Setup
 
@@ -27,15 +27,15 @@ There are two parts for setting up your local dev enviornment: **local developme
 ### Local Development Setup
 Use the following commands in your terminal (in order, waiting for the previous one to finish):
 
-1. `poetry install`: This will install the dependencies you need
-2. `poetry shell`: This will activate a virtual environment for you to work in (note that you might need to return to the correct directory after using this command)
+1. `uv venv`: Start a virtual environment with uv
+2. `uv sync`: Sync the project's dependencies with the virtual environment
 3. `pre-commit install`: This will install the pre-receive hooks for this project
 
 #### Running the Bot
 
 To run the bot, use the following command in the terminal:
 ```
-py main.py
+uv run main.py
 ```
 
 #### Development Mode
@@ -51,7 +51,7 @@ This eliminates the need to restart the bot after each code change during develo
 ### Bot Setup
 
 > [!IMPORTANT]
-> There are three commands used by the bot which require database access:  **the awaiz food tracker**, **scheduled threads**, and **reminders**. If there is an issue with one of these commands, or if you'd like a change, you will need to submit a bug/feature request issue or make a support ticket/suggestion on the discord server.
+> There are three commands used by the bot which require database access:  **the awaiz food tracker**, **gta quiz**, and **reminders**. If there is an issue with one of these commands, or if you'd like a change, you will need to submit a bug/feature request issue or make a support ticket/suggestion on the discord server.
 
 #### Creating a Discord Application
 

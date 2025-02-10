@@ -57,6 +57,7 @@ class PlayerState:
     name: str
     lives: int = 3
     score: int = 0
+    pending_high_score: Optional[int] = None
 
 
 @dataclass

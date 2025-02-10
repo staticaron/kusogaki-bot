@@ -567,16 +567,14 @@ class GTAQuizCog(BaseCog):
                 game_state.round_feedback.append(
                     f'✅ {interaction.user.name} got it right!'
                 )
-                if new_high_score:
-                    game_state.round_feedback.append(
-                        f'🏆 New high score: {new_high_score}!'
-                    )
             else:
                 player = game_state.players[interaction.user.id]
                 if is_eliminated:
-                    game_state.round_feedback.append(
-                        f'❌ {interaction.user.name} got it wrong and has been eliminated! 💀!'
-                    )
+                    player = game_state.players[interaction.user.id]
+                    elimination_message = f'❌ {interaction.user.name} got it wrong and has been eliminated! 💀'
+                    if player.pending_high_score:
+                        elimination_message += f'\n🏆 They achieved a new high score of {player.pending_high_score}!'
+                    game_state.round_feedback.append(elimination_message)
                 else:
                     hearts = '❤️' * player.lives
                     game_state.round_feedback.append(
@@ -616,6 +614,10 @@ class GTAQuizCog(BaseCog):
         if not final_scores:
             return
 
+        game = self.service.get_game(channel.id)
+        if not game:
+            return
+
         sorted_scores = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
 
         description = []
@@ -623,7 +625,11 @@ class GTAQuizCog(BaseCog):
             medal = {1: '🥇', 2: '🥈', 3: '🥉'}.get(i, '🎮')
             member = channel.guild.get_member(player_id)
             player_name = member.name if member else f'Player {player_id}'
-            description.append(f'{medal} {player_name}: {score} points')
+            player = game.players[player_id]
+            score_text = f'{medal} {player_name}: {score} points'
+            if player.pending_high_score:
+                score_text += ' 🏆 New Personal Best!'
+            description.append(score_text)
 
         embed = discord.Embed(
             title='🎮 Game Over!',

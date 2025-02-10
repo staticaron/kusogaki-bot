@@ -253,7 +253,7 @@ wheels = [
 
 [[package]]
 name = "kusogaki-bot"
-version = "0.5.3"
+version = "0.5.4"
 source = { virtual = "." }
 dependencies = [
     { name = "audioop-lts" },

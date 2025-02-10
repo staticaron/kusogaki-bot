@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.2...v0.5.3) (2025-02-10)
+
+
+### Bug Fixes
+
+* wait until a user is eliminated to show high score ([43305c0](https://github.com/kusogaki-events/kusogaki-bot/commit/43305c0ac27a0bb2db81c0c8ffa8540fe6e73bdd))
+
 ## [0.5.2](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.1...v0.5.2) (2025-02-08)
 
 

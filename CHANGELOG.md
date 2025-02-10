@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.3...v0.5.4) (2025-02-10)
+
+
+### Documentation
+
+* update docs for uv usage ([a6aee5d](https://github.com/kusogaki-events/kusogaki-bot/commit/a6aee5d4e1080d806f9d0da9ed064965fe16ca35))
+
 ## [0.5.3](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.2...v0.5.3) (2025-02-10)
 
 

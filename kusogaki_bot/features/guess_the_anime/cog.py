@@ -84,6 +84,7 @@ class AnswerView(discord.ui.View):
                     await self.cog._handle_answer(
                         interaction, answer, self.correct_answer
                     )
+                    await interaction.response.defer()
 
             except Exception as e:
                 logger.error(f'Error in button callback: {e}', exc_info=True)
@@ -445,8 +446,10 @@ class GTAQuizCog(BaseCog):
                         )
                         continue
 
-                    current_round_difficulty = self.service.get_current_difficulty(
-                        self.service.get_game(channel_id)
+                    game = self.service.get_game(channel_id)
+                    current_round_difficulty = self.service.get_current_difficulty(game)
+                    game.round_feedback.append(
+                        f'The correct answer was: **{correct_answer}**'
                     )
 
                     logger.info(f'Round started - Channel: {channel_id}')
@@ -484,9 +487,7 @@ class GTAQuizCog(BaseCog):
 
                 timed_out_players = self.service.handle_game_timeout(channel_id)
                 if timed_out_players:
-                    timeout_messages = [
-                        f"⏰ Time's up! The correct answer was: **{correct_answer}**"
-                    ]
+                    timeout_messages = ["⏰ Time's up!"]
                     for player_name, lives in timed_out_players:
                         hearts = '❤️' * lives
                         status = (
@@ -498,6 +499,8 @@ class GTAQuizCog(BaseCog):
                             f"⚠️ {player_name} didn't answer and {status}"
                         )
                     await channel.send('\n'.join(timeout_messages))
+
+                await channel.send('\n'.join(game.round_feedback))
 
                 is_game_over, final_scores = self.service.check_game_over(channel_id)
                 if is_game_over:
@@ -560,24 +563,23 @@ class GTAQuizCog(BaseCog):
                 interaction.channel.id, interaction.user.id, answer, correct_answer
             )
 
-            response = []
             if is_correct:
-                response.append(f'✅ {interaction.user.name} got it right!')
-                if new_high_score:
-                    response.append(f'🏆 New high score: {new_high_score}!')
+                game_state.round_feedback.append(
+                    f'✅ {interaction.user.name} got it right!'
+                )
             else:
                 player = game_state.players[interaction.user.id]
                 if is_eliminated:
-                    response.append(
-                        f'❌ Wrong answer! {interaction.user.name} has been eliminated! 💀'
-                    )
+                    player = game_state.players[interaction.user.id]
+                    elimination_message = f'❌ {interaction.user.name} got it wrong and has been eliminated! 💀'
+                    if player.pending_high_score:
+                        elimination_message += f'\n🏆 They achieved a new high score of {player.pending_high_score}!'
+                    game_state.round_feedback.append(elimination_message)
                 else:
                     hearts = '❤️' * player.lives
-                    response.append(
-                        f'❌ Wrong answer! {interaction.user.name} has {hearts} remaining.'
+                    game_state.round_feedback.append(
+                        f'❌ {interaction.user.name} got it wrong and has {hearts} remaining.'
                     )
-
-            await interaction.response.send_message('\n'.join(response))
 
         except Exception as e:
             logger.error(f'Error handling answer: {e}', exc_info=True)
@@ -612,6 +614,10 @@ class GTAQuizCog(BaseCog):
         if not final_scores:
             return
 
+        game = self.service.get_game(channel.id)
+        if not game:
+            return
+
         sorted_scores = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
 
         description = []
@@ -619,7 +625,11 @@ class GTAQuizCog(BaseCog):
             medal = {1: '🥇', 2: '🥈', 3: '🥉'}.get(i, '🎮')
             member = channel.guild.get_member(player_id)
             player_name = member.name if member else f'Player {player_id}'
-            description.append(f'{medal} {player_name}: {score} points')
+            player = game.players[player_id]
+            score_text = f'{medal} {player_name}: {score} points'
+            if player.pending_high_score:
+                score_text += ' 🏆 New Personal Best!'
+            description.append(score_text)
 
         embed = discord.Embed(
             title='🎮 Game Over!',

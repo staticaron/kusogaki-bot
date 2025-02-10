@@ -57,6 +57,7 @@ class PlayerState:
     name: str
     lives: int = 3
     score: int = 0
+    pending_high_score: Optional[int] = None
 
 
 @dataclass
@@ -72,6 +73,7 @@ class GameState:
     correct_streak: int = 0
     answered_players: set[int] = field(default_factory=set)
     timed_out_players: set[int] = field(default_factory=set)
+    round_feedback: list[str] = field(default_factory=list)
     easy_correct: int = 0
     medium_correct: int = 0
     hard_correct: int = 0

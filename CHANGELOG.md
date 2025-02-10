@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.5.3](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.2...v0.5.3) (2025-02-10)
+
+
+### Bug Fixes
+
+* wait until a user is eliminated to show high score ([43305c0](https://github.com/kusogaki-events/kusogaki-bot/commit/43305c0ac27a0bb2db81c0c8ffa8540fe6e73bdd))
+
+## [0.5.2](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.1...v0.5.2) (2025-02-08)
+
+
+### Bug Fixes
+
+* add correct answer feedback if no player answers ([6848e42](https://github.com/kusogaki-events/kusogaki-bot/commit/6848e426d9695b70d78da25bc24b3cf447100726))
+
+## [0.5.1](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.0...v0.5.1) (2025-02-08)
+
+
+### Bug Fixes
+
+* acknowledge button press guess the anime ([63a2168](https://github.com/kusogaki-events/kusogaki-bot/commit/63a21680fa02771bb3c1c2ec916c51966633143b))
+* delay gta answer feedback until end of round ([a3dce20](https://github.com/kusogaki-events/kusogaki-bot/commit/a3dce20a10831b9d5cb0169054aea48229eda2c1))
+
+
+### Documentation
+
+* remove reference to round feedback in AnswerView ([373caa8](https://github.com/kusogaki-events/kusogaki-bot/commit/373caa8c6a0012c4a84bb1263709f4d3987e6cb8))
+
 ## [0.5.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.4.0...v0.5.0) (2025-01-24)
 
 

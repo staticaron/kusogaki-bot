@@ -136,6 +136,7 @@ class GTAGameService:
             game.answered_players.clear()
             game.timed_out_players.clear()
             game.processing_answers = False
+            game.round_feedback = []
 
     def stop_game(self, channel_id: int, user_id: int) -> CommandResult:
         """
@@ -401,10 +402,10 @@ class GTAGameService:
                         f'Got HARD correct. Totals - Easy: {game.easy_correct}, Medium: {game.medium_correct}, Hard: {game.hard_correct}'
                     )
 
-                new_high_score = self.repository.update_player_score(
+                player.pending_high_score = self.repository.update_player_score(
                     player_id, player.name, player.score
                 )
-                return True, False, new_high_score
+                return True, False, None
             else:
                 if player_id not in game.timed_out_players:
                     player.lives -= 1

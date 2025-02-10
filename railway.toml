@@ -1,9 +1,9 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pip install poetry && poetry install"
+buildCommand = "uv sync --no-dev --frozen"
 
 [deploy]
-startCommand = "python main.py"
+startCommand = "uv run main.py"
 
 [service]
 memory = "1024M"

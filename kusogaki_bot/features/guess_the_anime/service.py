@@ -335,9 +335,12 @@ class GTAGameService:
                 logger.error(f'Failed to load image from {image.link}')
                 return None, [], ''
 
-            options = random.sample(
-                wrong_options, min(self.MAX_OPTIONS - 1, len(wrong_options))
-            )
+            filtered_wrong_options = [
+                opt for opt in wrong_options if opt != image.anime_name
+            ]
+            num_wrong_options = min(self.MAX_OPTIONS - 1, len(filtered_wrong_options))
+            options = random.sample(filtered_wrong_options, num_wrong_options)
+
             options.append(image.anime_name)
             random.shuffle(options)
 

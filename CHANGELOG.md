@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.5](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.4...v0.5.5) (2025-02-17)
+
+
+### Bug Fixes
+
+* filter out duplicate titles in GTA options ([bd3bb0c](https://github.com/kusogaki-events/kusogaki-bot/commit/bd3bb0cd291fc648771ddeabd1b4f8fcfd3e7303))
+
 ## [0.5.4](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.3...v0.5.4) (2025-02-10)
 
 

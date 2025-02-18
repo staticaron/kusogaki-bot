@@ -336,7 +336,7 @@ class GTAGameService:
                 return None, [], ''
 
             filtered_wrong_options = [
-                opt for opt in wrong_options if opt != image.anime_name
+                opt for opt in dict.fromkeys(wrong_options) if opt != image.anime_name
             ]
             num_wrong_options = min(self.MAX_OPTIONS - 1, len(filtered_wrong_options))
             options = random.sample(filtered_wrong_options, num_wrong_options)

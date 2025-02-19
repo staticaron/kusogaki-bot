@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.6](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.5...v0.5.6) (2025-02-19)
+
+
+### Bug Fixes
+
+* prevent duplicate incorrect options ([ee4e2ce](https://github.com/kusogaki-events/kusogaki-bot/commit/ee4e2ce2307bdd1c1424616e47ada40ec866526d))
+
 ## [0.5.5](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.4...v0.5.5) (2025-02-17)
 
 

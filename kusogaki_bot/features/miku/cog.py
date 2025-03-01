@@ -13,7 +13,7 @@ class MikuCog(BaseCog):
         if message.author == self.bot.user:
             return
             
-        if "miku" in message.content.lower():
+        if 'miku' in message.content.lower():
             await message.channel.send("I'm thinking miku miku oo ee oo")
 
 async def setup(bot: KusogakiBot):

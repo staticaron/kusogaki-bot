@@ -1,10 +1,12 @@
 from discord.ext import commands
+
 from kusogaki_bot.core import BaseCog, KusogakiBot
 
 class MikuCog(BaseCog):
     """
     Cog that satisfies the miku needs of the deprived individual
     """
+
     def __init__(self, bot: KusogakiBot):
         super().__init__(bot)
 

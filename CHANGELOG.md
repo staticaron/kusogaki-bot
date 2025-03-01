@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.6...v0.6.0) (2025-03-01)
+
+
+### Features
+
+* added Miku ([3723ba6](https://github.com/kusogaki-events/kusogaki-bot/commit/3723ba623e978c1d6703348a71f66da773d6453a))
+
 ## [0.5.6](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.5...v0.5.6) (2025-02-19)
 
 

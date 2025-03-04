@@ -444,7 +444,7 @@ class GTAQuizCog(BaseCog):
                         f'Game starting in `{countdown}` seconds!\n'
                         f'{progress_bar}\n'
                         f'Starting player: {message.embeds[0].description.split("Starting player: ")[1].split("\n")[0]}\n\n'
-                        'Type `kuso gq join` to join!'
+                        'Press the button to join!'
                     ),
                 )
 

@@ -224,7 +224,7 @@ class GTAQuizCog(BaseCog):
         """
         if ctx.invoked_subcommand is None:
             await ctx.send(
-                'Available commands: `start`, `join`, `stop`, `leaderboard`, `score`'
+                'Available commands: `start`, `stop`, `leaderboard`, `score`'
             )
 
     @gta_quiz.command(name='start')

@@ -310,7 +310,10 @@ class GTAQuizCog(BaseCog):
             result = self.service.add_player(
                 interaction.channel.id, interaction.user.id, interaction.user.name
             )
-            await interaction.response.send_message(result.message, ephemeral=True)
+            if result.success:
+                await interaction.response.send_message(result.message)
+            else:
+                await interaction.response.send_message(result.message, ephemeral=True)
 
         except Exception as e:
             logger.error(f'Error joining game: {e}')

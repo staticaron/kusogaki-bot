@@ -36,8 +36,9 @@ The GTA Quiz Game allows users to participate in GTA style quiz using all the pr
 
 **Examples:**
 ```
-kuso gtaquiz start
+kuso gtaquiz start medium
 kuso gq stop
+kuso gq leaderboard
 ```
 
 **Aliases:** `gq`

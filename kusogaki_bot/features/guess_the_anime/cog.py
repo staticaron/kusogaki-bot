@@ -157,11 +157,7 @@ class JoinView(discord.ui.View):
 
             except Exception as e:
                 logger.error(f'Error in button callback: {e}', exc_info=True)
-                if game_state:
-                    try:
-                        game_state.answered_players.remove(interaction.user.id)
-                    except KeyError:
-                        pass
+
                 try:
                     await interaction.response.send_message(
                         'Something went wrong joining the game. Please try again.',
@@ -259,11 +255,16 @@ class GTAQuizCog(BaseCog):
 
             view = JoinView(self)
 
+            player_names = (
+                f'<@{player_id}>'
+                for player_id in self.service.get_game(ctx.channel.id).players.keys()
+            )
+
             embed, file = await self.create_embed(
                 EmbedType.NORMAL,
                 '🎮 Guess The Anime Quiz',
                 f'{result.message}\n'
-                f'Starting player: {ctx.author.mention}\n\n'
+                f'Player(s): {', '.join(player_names)}\n\n'
                 'Press the button to join!',
             )
 
@@ -301,7 +302,7 @@ class GTAQuizCog(BaseCog):
         Players can only join during the countdown phase before the game starts.
 
         Args:
-            ctx (commands.Context): The command context
+            interaction (discord.Interaction): The interaction context
 
         Raises:
             Exception: If there's an error adding the player to the game
@@ -440,13 +441,18 @@ class GTAQuizCog(BaseCog):
                 filled = round((countdown / self.service.LOADING_TIME) * total_width)
                 progress_bar = f'`{"█" * filled}{"░" * (total_width - filled)}`'
 
+                player_names = (
+                    f'<@{player_id}>'
+                    for player_id in self.service.get_game(channel_id).players.keys()
+                )
+
                 embed, file = await self.create_embed(
                     type=EmbedType.NORMAL,
                     title='🎮 Guess The Anime Quiz',
                     description=(
                         f'Game starting in `{countdown}` seconds!\n'
                         f'{progress_bar}\n'
-                        f'Starting player: {message.embeds[0].description.split("Starting player: ")[1].split("\n")[0]}\n\n'
+                        f'Player(s): {', '.join(player_names)}\n\n'
                         'Press the button to join!'
                     ),
                 )

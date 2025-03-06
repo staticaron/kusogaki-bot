@@ -264,7 +264,7 @@ class GTAQuizCog(BaseCog):
                 EmbedType.NORMAL,
                 '🎮 Guess The Anime Quiz',
                 f'{result.message}\n'
-                f'Player(s): {', '.join(player_names)}\n\n'
+                f'Player(s): {", ".join(player_names)}\n\n'
                 'Press the button to join!',
             )
 
@@ -452,7 +452,7 @@ class GTAQuizCog(BaseCog):
                     description=(
                         f'Game starting in `{countdown}` seconds!\n'
                         f'{progress_bar}\n'
-                        f'Player(s): {', '.join(player_names)}\n\n'
+                        f'Player(s): {", ".join(player_names)}\n\n'
                         'Press the button to join!'
                     ),
                 )

@@ -302,7 +302,7 @@ class GTAQuizCog(BaseCog):
         Players can only join during the countdown phase before the game starts.
 
         Args:
-            interaction (discord.Interaction): The interaction context
+            interaction (discord.Interaction): The button interaction triggering the join
 
         Raises:
             Exception: If there's an error adding the player to the game

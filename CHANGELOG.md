@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.6.0...v0.7.0) (2025-03-10)
+
+
+### Features
+
+* join GTA quiz with button instead of message ([4956629](https://github.com/kusogaki-events/kusogaki-bot/commit/4956629c3bcde31f41c5e20e48372854addd833c))
+* join GTA quiz with button instead of message ([1bd5144](https://github.com/kusogaki-events/kusogaki-bot/commit/1bd51445a65707aaca2a9a291b4c59df7b6df80e))
+* show joined players in game start embed ([9933d2d](https://github.com/kusogaki-events/kusogaki-bot/commit/9933d2def923831ea83b0d68fb0e8a24c85b54b3))
+
+
+### Bug Fixes
+
+* make successful player join message visible ([9ef7b90](https://github.com/kusogaki-events/kusogaki-bot/commit/9ef7b9072778eb85b327c198fc10ccd9e8f30a29))
+
+
+### Documentation
+
+* add example to replace join example ([784dcaa](https://github.com/kusogaki-events/kusogaki-bot/commit/784dcaa12610719c94a6b59a6f038154fe171b0f))
+* fix pydoc wording ([fc04d26](https://github.com/kusogaki-events/kusogaki-bot/commit/fc04d26f28fb949f78e794b9d30fdf8655b12989))
+* remove deprecated gq join command ([9c31c72](https://github.com/kusogaki-events/kusogaki-bot/commit/9c31c72139071fb7f34942bfc8849d9eca1a0eb5))
+* remove join command from list ([b6bf880](https://github.com/kusogaki-events/kusogaki-bot/commit/b6bf880fb9b64684711899feb9d6c4b02f0b3b11))
+* remove references to gq join command ([357fe01](https://github.com/kusogaki-events/kusogaki-bot/commit/357fe01313826847ea5b370a3caf8462f5a6c8d8))
+
 ## [0.6.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.5.6...v0.6.0) (2025-03-01)
 
 

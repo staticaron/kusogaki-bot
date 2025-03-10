@@ -446,12 +446,12 @@ class GTAQuizCog(BaseCog):
                     for player_id in self.service.get_game(channel_id).players.keys()
                 )
 
-                embed, file = await self.create_embed(
+                embed, _ = await self.create_embed(
                     type=EmbedType.NORMAL,
                     title='🎮 Guess The Anime Quiz',
                     description=(
                         f'Game starting in `{countdown}` seconds!\n'
-                        f'{progress_bar}\n'
+                        f'{progress_bar}\n\n'
                         f'Player(s): {", ".join(player_names)}\n\n'
                         'Press the button to join!'
                     ),

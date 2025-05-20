@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.7.0...v0.7.1) (2025-05-20)
+
+
+### Miscellaneous Chores
+
+* release 0.7.1 ([27978de](https://github.com/kusogaki-events/kusogaki-bot/commit/27978deb74d5b1eb721643499c1d842c913d170e))
+
 ## [0.7.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.6.0...v0.7.0) (2025-03-10)
 
 

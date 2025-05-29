@@ -12,7 +12,7 @@ class RecommendationCog(BaseCog):
         self.recommendation_service = RecommendationService()
 
     @commands.command(
-        name='recommend', description='Have the bot recommend a manga/anime.'
+        name='recommend', description='Have the bot recommend a manga/anime.', aliases=['rec']
     )
     async def recommend(
         self,

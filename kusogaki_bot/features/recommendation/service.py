@@ -81,6 +81,7 @@ class RecommendationService:
             lists {
               entries {
                 score
+                status
                 media {
                   id
                   popularity
@@ -116,7 +117,7 @@ class RecommendationService:
             req_vars = {
                 'userName': anilist_username,
                 'type': media_type.upper(),
-                'statusNotIn': ['PLANNING', 'DROPPED'],
+                'statusNotIn': 'PLANNING',
                 'perPage': 8,
                 'sort': 'RATING_DESC',
                 'perChunk': chunk_size,
@@ -222,6 +223,8 @@ class RecommendationService:
 
         for entry in list_data:
             if not entry['media']['recommendations']['nodes']:
+                continue
+            if entry['status'] == 'DROPPED':
                 continue
 
             # Weight each show's recommendation by strength of recommendation on the site

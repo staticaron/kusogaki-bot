@@ -8,6 +8,7 @@ from httpx import AsyncClient, ReadTimeout, RequestError, post
 
 class RecommendationService:
     """Service for handling requests/scoring for animanga recommendations"""
+
     def __init__(self):
         self.known_manga_recs = {}
         self.known_anime_recs = {}
@@ -115,7 +116,7 @@ class RecommendationService:
             req_vars = {
                 'userName': anilist_username,
                 'type': media_type.upper(),
-                'statusNotIn': 'PLANNING',
+                'statusNotIn': ['PLANNING', 'DROPPED'],
                 'perPage': 8,
                 'sort': 'RATING_DESC',
                 'perChunk': chunk_size,
@@ -182,7 +183,7 @@ class RecommendationService:
         return list_data, user_stats
 
     def calculate_rec_scores(
-            self, list_data: list[dict], user_stats: dict, requested_genre: str = ""
+        self, list_data: list[dict], user_stats: dict, requested_genre: str = ''
     ) -> dict[int, float]:
         """
         Scoring algorithm for animanga recs
@@ -336,15 +337,19 @@ class RecommendationService:
         Returns:
             str: Animanga recommendation anilist link and recommendation score
         """
-        known_recs = (self.known_manga_recs if media_type == 'manga' else self.known_anime_recs)
+        known_recs = (
+            self.known_manga_recs if media_type == 'manga' else self.known_anime_recs
+        )
         requested_recs = f'{anilist_username}{requested_genre}'
 
         # Use cached data unless cached data does not exist or is outdated
         try:
             time_delta = (
-                    (datetime.now() - datetime.strptime(known_recs[requested_recs]['date'], '%Y/%m/%d %H:%M:%S'))
-                    .total_seconds()
-            )
+                datetime.now()
+                - datetime.strptime(
+                    known_recs[requested_recs]['date'], '%Y/%m/%d %H:%M:%S'
+                )
+            ).total_seconds()
         except KeyError:
             time_delta = 0
         if requested_recs not in known_recs or force_update or time_delta > 345600:

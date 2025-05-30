@@ -300,15 +300,19 @@ class RecommendationService:
                         * rec_pop_factor
                     )
 
-        # Sort recommendations by score then take the top 20, add random variation of +-20%
-        recommendation_scores = dict(
-            sorted(
-                recommendation_scores.items(), key=lambda item: item[1], reverse=True
-            )
-        )
+        # Add random variation of +/- 20), then sort recommendations by score and take the top 20
         recommendation_scores = {
-            k: v * uniform(0.8, 1.2)
-            for i, (k, v) in enumerate(recommendation_scores.items())
+            k: v * uniform(0.8, 1.2) for k, v in recommendation_scores.items()
+        }
+        recommendation_scores = {
+            k: v
+            for i, (k, v) in enumerate(
+                sorted(
+                    recommendation_scores.items(),
+                    key=lambda item: item[1],
+                    reverse=True,
+                )
+            )
             if i < 20 and v >= 0
         }
 

@@ -29,6 +29,7 @@ class RecommendationCog(BaseCog):
         media_type = media_type.lower()
         if genre in ['anime', 'manga']:
             media_type = genre
+            genre = ''
 
         await ctx.defer()
         rec = await self.recommendation_service.get_recommendation(

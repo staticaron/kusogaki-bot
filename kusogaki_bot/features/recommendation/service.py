@@ -3,7 +3,10 @@ from datetime import datetime
 from random import choice, uniform
 from typing import Optional
 
+from discord import Embed
 from httpx import AsyncClient, ReadTimeout, RequestError, post
+
+from kusogaki_bot.features.recommendation.data import MediaRec
 
 
 class RecommendationService:
@@ -90,9 +93,15 @@ class RecommendationService:
                       rating
                       mediaRecommendation {
                         id
+                        coverImage {
+                          medium
+                        }
                         genres
                         meanScore
                         popularity
+                        title {
+                          romaji
+                        }
                         relations {
                           edges {
                             relationType
@@ -185,7 +194,7 @@ class RecommendationService:
 
     def calculate_rec_scores(
         self, list_data: list[dict], user_stats: dict, requested_genre: str = ''
-    ) -> dict[int, float]:
+    ) -> list[MediaRec]:
         """
         Scoring algorithm for animanga recs
 
@@ -219,7 +228,7 @@ class RecommendationService:
                     genre['meanScore'] - user_stats['meanScore']
                 ) / 100
 
-        recommendation_scores = {}
+        recommendation_scores: dict[int:MediaRec] = {}
 
         for entry in list_data:
             if not entry['media']['recommendations']['nodes']:
@@ -241,11 +250,6 @@ class RecommendationService:
                     continue
                 if not show_rec['mediaRecommendation']['meanScore']:
                     show_rec['mediaRecommendation']['meanScore'] = 65
-                if requested_genre and not any(
-                    genre.lower() == requested_genre
-                    for genre in show_rec['mediaRecommendation']['genres']
-                ):
-                    continue
 
                 # Filter out shows with prequels that have not been seen yet
                 try:
@@ -287,41 +291,42 @@ class RecommendationService:
                     rec_genre_score *= rec_genre_score_weight
 
                 rec_total_weight = show_rec['rating'] / max_rec_rating
+                total_rec_score = (
+                    (node_score + rec_show_score + rec_genre_score)
+                    * rec_total_weight
+                    * rec_pop_factor
+                )
                 if show_rec['mediaRecommendation']['id'] not in recommendation_scores:
                     recommendation_scores[show_rec['mediaRecommendation']['id']] = (
-                        (node_score + rec_show_score + rec_genre_score)
-                        * rec_total_weight
-                        * rec_pop_factor
+                        MediaRec(
+                            media_id=show_rec['mediaRecommendation']['id'],
+                            title=show_rec['mediaRecommendation']['title']['romaji'],
+                            genres=[
+                                genre.lower()
+                                for genre in show_rec['mediaRecommendation']['genres']
+                            ],
+                            cover_url=show_rec['mediaRecommendation']['coverImage'][
+                                'medium'
+                            ],
+                        )
                     )
-                else:
-                    recommendation_scores[show_rec['mediaRecommendation']['id']] += (
-                        (node_score + rec_show_score + rec_genre_score)
-                        * rec_total_weight
-                        * rec_pop_factor
-                    )
+                recommendation_scores[
+                    show_rec['mediaRecommendation']['id']
+                ].score += total_rec_score
 
-        # Add random variation of +/- 20), then sort recommendations by score and take the top 20
-        recommendation_scores = {
-            k: v * uniform(0.8, 1.2) for k, v in recommendation_scores.items()
-        }
-        recommendation_scores = {
-            k: v
-            for i, (k, v) in enumerate(
-                sorted(
-                    recommendation_scores.items(),
-                    key=lambda item: item[1],
-                    reverse=True,
-                )
-            )
-            if i < 20 and v >= 0
-        }
+        recommendation_scores = list(recommendation_scores.values())
+
+        # Add random variation of +/- 20%, then sort recommendations by score
+        for rec in recommendation_scores:
+            rec.score *= uniform(0.8, 1.2)
+
+        recommendation_scores = [rec for rec in recommendation_scores if rec.score >= 0]
+        recommendation_scores.sort(reverse=True)
 
         # Normalize scores and apply filter for logical percentages
-        max_recommendation_score = max(recommendation_scores.values())
-        recommendation_scores = {
-            k: (v / max_recommendation_score) ** 0.35 * 100
-            for k, v in recommendation_scores.items()
-        }
+        max_score = recommendation_scores[0].score
+        for rec in recommendation_scores:
+            rec.score = (rec.score / max_score) ** 0.35 * 100
 
         return recommendation_scores
 
@@ -331,7 +336,7 @@ class RecommendationService:
         requested_genre: str,
         media_type: str,
         force_update: bool = False,
-    ) -> str:
+    ) -> Optional[MediaRec]:
         """
         Suggest an anime/manga, fetching new data if not cached.
 
@@ -347,19 +352,18 @@ class RecommendationService:
         known_recs = (
             self.known_manga_recs if media_type == 'manga' else self.known_anime_recs
         )
-        requested_recs = f'{anilist_username}{requested_genre}'
 
         # Use cached data unless cached data does not exist or is outdated
         try:
             time_delta = (
                 datetime.now()
                 - datetime.strptime(
-                    known_recs[requested_recs]['date'], '%Y/%m/%d %H:%M:%S'
+                    known_recs[anilist_username]['date'], '%Y/%m/%d %H:%M:%S'
                 )
             ).total_seconds()
         except KeyError:
             time_delta = 0
-        if requested_recs not in known_recs or force_update or time_delta > 345600:
+        if anilist_username not in known_recs or force_update or time_delta > 345600:
             try:
                 list_data, user_stats = await self.fetch_recommendations(
                     anilist_username=anilist_username,
@@ -371,22 +375,71 @@ class RecommendationService:
                     requested_genre=requested_genre,
                 )
             except RequestError:
-                return 'Error fetching recommendations. Please try again later.'
+                return None
 
             if media_type.lower() == 'manga':
-                self.known_manga_recs[f'{anilist_username}{requested_genre}'] = {
+                self.known_manga_recs[anilist_username] = {
                     'date': datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                     'recs': recommendation_scores,
                 }
             else:
-                self.known_anime_recs[f'{anilist_username}{requested_genre}'] = {
+                self.known_anime_recs[anilist_username] = {
                     'date': datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                     'recs': recommendation_scores,
                 }
 
-        recs = known_recs[requested_recs]['recs']
+        recs = known_recs[anilist_username]['recs']
 
-        rec_id = choice(tuple(recs.keys()))
-        final_rec = f'https://anilist.co/{media_type}/{rec_id}/\nRecommendation Score: {recs[rec_id]:.1f}%'
+        rec = choice(recs[0 : min(20, len(recs) - 1)])
 
-        return final_rec
+        return rec
+
+    def get_rec_embed(
+        self, anilist_username: str, media_type: str, genre: str
+    ) -> Embed:
+        if media_type == 'manga':
+            color = 0x7CD553
+            recs = self.known_manga_recs[anilist_username]['recs']
+        else:
+            color = 0x3BAFEB
+            recs = self.known_anime_recs[anilist_username]['recs']
+
+        if genre:
+            recs = [rec for rec in recs if genre in rec.genres]
+
+        embed = Embed(colour=color, title=f'Recommendation for {anilist_username}')
+        rec = choice(recs[0 : min(20, len(recs) - 1)])
+
+        embed.description = f"""
+**{rec.title}** - https://anilist.co/{media_type}/{rec.media_id}/
+*Genres - {', '.join(rec.genres)}*
+*Recommendation strength - {rec.score:.2f}%*
+"""
+        embed.set_thumbnail(url=rec.cover_url)
+        return embed
+
+    def get_all_recs_embed(
+        self, anilist_username, media_type: str, genre: str = None
+    ) -> Embed:
+        if media_type == 'manga':
+            color = 0x7CD553
+            recs = self.known_manga_recs[anilist_username]['recs']
+        else:
+            color = 0x3BAFEB
+            recs = self.known_anime_recs[anilist_username]['recs']
+
+        if genre:
+            recs = [rec for rec in recs if genre in rec.genres]
+
+        embed = Embed(
+            colour=color, title=f'{genre} Recommendations for {anilist_username}'
+        )
+
+        rec_info = [
+            f'**{rec.title}** (https://anilist.co/{media_type}/{rec.media_id})\n'
+            f'*Recommendation Strength: {rec.score:.2f}%*\n'
+            f'Genres: {", ".join(rec.genres)}'
+            for rec in recs[0 : min(10, len(recs) - 1)]
+        ]
+        embed.description = '\n\n'.join(rec_info)
+        return embed

@@ -1,6 +1,6 @@
 from asyncio import gather
 from datetime import datetime
-from random import choice, uniform
+from random import uniform
 from typing import Optional
 
 from discord import Embed
@@ -94,7 +94,7 @@ class RecommendationService:
                       mediaRecommendation {
                         id
                         coverImage {
-                          medium
+                          large
                         }
                         genres
                         meanScore
@@ -306,7 +306,7 @@ class RecommendationService:
                                 for genre in show_rec['mediaRecommendation']['genres']
                             ],
                             cover_url=show_rec['mediaRecommendation']['coverImage'][
-                                'medium'
+                                'large'
                             ],
                         )
                     )
@@ -336,7 +336,7 @@ class RecommendationService:
         requested_genre: str,
         media_type: str,
         force_update: bool = False,
-    ) -> Optional[MediaRec]:
+    ) -> None:
         """
         Suggest an anime/manga, fetching new data if not cached.
 
@@ -388,14 +388,10 @@ class RecommendationService:
                     'recs': recommendation_scores,
                 }
 
-        recs = known_recs[anilist_username]['recs']
-
-        rec = choice(recs[0 : min(20, len(recs) - 1)])
-
-        return rec
+        return None
 
     def get_rec_embed(
-        self, anilist_username: str, media_type: str, genre: str
+        self, anilist_username: str, media_type: str, genre: str, page: int
     ) -> Embed:
         if media_type == 'manga':
             color = 0x7CD553
@@ -408,7 +404,12 @@ class RecommendationService:
             recs = [rec for rec in recs if genre in rec.genres]
 
         embed = Embed(colour=color, title=f'Recommendation for {anilist_username}')
-        rec = choice(recs[0 : min(20, len(recs) - 1)])
+        if not recs:
+            embed.description = "I couldn't find any recommendations!"
+            return embed
+
+        max_page = min(20, len(recs))
+        rec = recs[page % max_page]
 
         embed.description = f"""
 **{rec.title}** - https://anilist.co/{media_type}/{rec.media_id}/
@@ -416,30 +417,4 @@ class RecommendationService:
 *Recommendation strength - {rec.score:.2f}%*
 """
         embed.set_thumbnail(url=rec.cover_url)
-        return embed
-
-    def get_all_recs_embed(
-        self, anilist_username, media_type: str, genre: str = None
-    ) -> Embed:
-        if media_type == 'manga':
-            color = 0x7CD553
-            recs = self.known_manga_recs[anilist_username]['recs']
-        else:
-            color = 0x3BAFEB
-            recs = self.known_anime_recs[anilist_username]['recs']
-
-        if genre:
-            recs = [rec for rec in recs if genre in rec.genres]
-
-        embed = Embed(
-            colour=color, title=f'{genre} Recommendations for {anilist_username}'
-        )
-
-        rec_info = [
-            f'**{rec.title}** (https://anilist.co/{media_type}/{rec.media_id})\n'
-            f'*Recommendation Strength: {rec.score:.2f}%*\n'
-            f'Genres: {", ".join(rec.genres)}'
-            for rec in recs[0 : min(10, len(recs) - 1)]
-        ]
-        embed.description = '\n\n'.join(rec_info)
         return embed

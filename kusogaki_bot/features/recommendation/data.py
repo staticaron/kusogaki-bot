@@ -24,12 +24,21 @@ class MediaRec:
         return isinstance(other, MediaRec) and other.media_id == self.media_id
 
 
-class ViewRecButton(Button):
+class NextRecButton(Button):
     def __init__(self):
         super().__init__(
             style=ButtonStyle.success,
-            label='All Recs',
-            custom_id='view_recs',
+            label='Next',
+            custom_id='next_rec',
+        )
+
+
+class PrevRecButton(Button):
+    def __init__(self):
+        super().__init__(
+            style=ButtonStyle.danger,
+            label='Prev',
+            custom_id='prev_rec',
         )
 
 
@@ -37,17 +46,31 @@ class RecView(View):
     def __init__(self, rec_service, anilist_username: str, media_type: str, genre: str):
         super().__init__(timeout=60)
         self.rec_service = rec_service
-        (self.add_item(ViewRecButton()),)
+        self.add_item(PrevRecButton())
+        self.add_item(NextRecButton())
         self.anilist_username = anilist_username
         self.media_type = media_type
         self.genre = genre
+        self.page = 0
 
     async def interaction_check(self, interaction: Interaction) -> bool:
-        if interaction.data['custom_id'] == 'view_recs':
-            embed = self.rec_service.get_all_recs_embed(
+        embed = None
+        if interaction.data['custom_id'] == 'prev_rec':
+            self.page -= 1
+            embed = self.rec_service.get_rec_embed(
                 anilist_username=self.anilist_username,
                 media_type=self.media_type,
                 genre=self.genre,
+                page=self.page,
             )
-            await interaction.response.edit_message(embed=embed, view=None)
+        elif interaction.data['custom_id'] == 'next_rec':
+            self.page += 1
+            embed = self.rec_service.get_rec_embed(
+                anilist_username=self.anilist_username,
+                media_type=self.media_type,
+                genre=self.genre,
+                page=self.page,
+            )
+
+        await interaction.response.edit_message(embed=embed, view=self)
         return True

@@ -32,26 +32,26 @@ class RecommendationCog(BaseCog):
             genre = ''
 
         await ctx.defer()
-        rec = await self.recommendation_service.get_recommendation(
+        await self.recommendation_service.get_recommendation(
             anilist_username=anilist_username,
             media_type=media_type,
             requested_genre=genre,
             force_update=False,
         )
 
-        if rec is None:
-            await ctx.send(content='Error [add message later]')
-        else:
-            view = RecView(
-                self.recommendation_service,
-                anilist_username=anilist_username,
-                media_type=media_type,
-                genre=genre,
-            )
-            embed = self.recommendation_service.get_rec_embed(
-                anilist_username=anilist_username, media_type=media_type, genre=genre
-            )
-            await ctx.send(embed=embed, view=view)
+        view = RecView(
+            self.recommendation_service,
+            anilist_username=anilist_username,
+            media_type=media_type,
+            genre=genre,
+        )
+        embed = self.recommendation_service.get_rec_embed(
+            anilist_username=anilist_username,
+            media_type=media_type,
+            genre=genre,
+            page=view.page,
+        )
+        await ctx.send(embed=embed, view=view)
 
 
 async def setup(bot: commands.Bot):

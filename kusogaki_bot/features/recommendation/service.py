@@ -193,7 +193,7 @@ class RecommendationService:
         return list_data, user_stats
 
     def calculate_rec_scores(
-        self, list_data: list[dict], user_stats: dict, requested_genre: str = ''
+        self, list_data: list[dict], user_stats: dict
     ) -> list[MediaRec]:
         """
         Scoring algorithm for animanga recs
@@ -201,10 +201,9 @@ class RecommendationService:
         Args:
             list_data (list[dict]): Anilist media list collection data
             user_stats (dict): Anilist user statistics
-            requested_genre (Optional[str]): Genre to get recommendations for
 
         Returns:
-            dict[int, float]: Top 20 recommendations {media_id: score}
+            list[MediaRec]: List of user's recommendations
         """
         # Obtain max user score, collect watched show info
         max_score = 0
@@ -219,14 +218,13 @@ class RecommendationService:
 
         # Get user genre scores
         user_genre_scores = {}
-        if not requested_genre:
-            for genre in user_stats['genres']:
-                genre_name = genre['genre']
-                if not genre['meanScore']:
-                    user_genre_scores[genre_name] = 0
-                user_genre_scores[genre_name] = (
-                    genre['meanScore'] - user_stats['meanScore']
-                ) / 100
+        for genre in user_stats['genres']:
+            genre_name = genre['genre']
+            if not genre['meanScore']:
+                user_genre_scores[genre_name] = 0
+            user_genre_scores[genre_name] = (
+                genre['meanScore'] - user_stats['meanScore']
+            ) / 100
 
         recommendation_scores: dict[int:MediaRec] = {}
 
@@ -282,12 +280,11 @@ class RecommendationService:
                 rec_pop_factor = rec_pop_factor**1.5 if rec_pop_factor > 0 else 0.1
                 rec_genre_score_weight = 0.75
                 rec_genre_score = 0
-                if not requested_genre:
-                    for genre in show_rec['mediaRecommendation']['genres']:
-                        try:
-                            rec_genre_score += user_genre_scores[genre]
-                        except KeyError:
-                            continue
+                for genre in show_rec['mediaRecommendation']['genres']:
+                    try:
+                        rec_genre_score += user_genre_scores[genre]
+                    except KeyError:
+                        continue
                     rec_genre_score *= rec_genre_score_weight
 
                 rec_total_weight = show_rec['rating'] / max_rec_rating
@@ -330,24 +327,19 @@ class RecommendationService:
 
         return recommendation_scores
 
-    async def get_recommendation(
+    async def check_recommendation(
         self,
         anilist_username: str,
-        requested_genre: str,
         media_type: str,
         force_update: bool = False,
     ) -> None:
         """
-        Suggest an anime/manga, fetching new data if not cached.
+        Check if recommendations exist in cache and are up to date, and fetch new data if not cached.
 
         Args:
             anilist_username (str): Anilist username to recommend for
-            requested_genre (Optional[str]): Genre to get recommendations for
             media_type (str): Anilist user statistics
             force_update (bool): If true, will always fetch new data from anilist instead of using cache
-
-        Returns:
-            str: Animanga recommendation anilist link and recommendation score
         """
         known_recs = (
             self.known_manga_recs if media_type == 'manga' else self.known_anime_recs
@@ -372,7 +364,6 @@ class RecommendationService:
                 recommendation_scores = self.calculate_rec_scores(
                     list_data=list_data,
                     user_stats=user_stats,
-                    requested_genre=requested_genre,
                 )
             except RequestError:
                 return None
@@ -393,6 +384,18 @@ class RecommendationService:
     def get_rec_embed(
         self, anilist_username: str, media_type: str, genre: str, page: int
     ) -> Embed:
+        """
+        Generate an embed with the recommended media.
+
+        Args:
+            anilist_username (str): Anilist username to recommend for
+            media_type (str): Specify to recommend manga/anime
+            genre (str): Limit recommendations to specified genre
+            page (int): Which recommendation in user's rec list to display
+
+        Returns:
+            Embed: Embed displaying recommended media and corresponding information
+        """
         if media_type == 'manga':
             color = 0x7CD553
             recs = self.known_manga_recs[anilist_username]['recs']

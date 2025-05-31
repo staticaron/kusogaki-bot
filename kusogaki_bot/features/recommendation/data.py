@@ -43,6 +43,17 @@ class PrevRecButton(Button):
 
 
 class RecView(View):
+    """
+    Discord UI View for handling animanga recommendation interactions.
+
+    Attributes:
+        rec_service (RecommendationService): Recommendation service for handling recommendation logic
+        anilist_username (str): Anilist username to recommend for
+        media_type (str): Specify to recommend manga/anime
+        genre (str): Limit recommendations to specified genre
+        page (int): Which recommendation in user's rec list to display
+    """
+
     def __init__(self, rec_service, anilist_username: str, media_type: str, genre: str):
         super().__init__(timeout=60)
         self.rec_service = rec_service

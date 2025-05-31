@@ -32,10 +32,9 @@ class RecommendationCog(BaseCog):
             genre = ''
 
         await ctx.defer()
-        await self.recommendation_service.get_recommendation(
+        await self.recommendation_service.check_recommendation(
             anilist_username=anilist_username,
             media_type=media_type,
-            requested_genre=genre,
             force_update=False,
         )
 

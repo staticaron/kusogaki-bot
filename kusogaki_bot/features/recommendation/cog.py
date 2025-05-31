@@ -1,6 +1,7 @@
 from typing import Optional
 
 from discord.ext import commands
+from httpx import RequestError
 
 from kusogaki_bot.core import BaseCog, KusogakiBot
 from kusogaki_bot.features.recommendation.data import RecView
@@ -32,11 +33,15 @@ class RecommendationCog(BaseCog):
             genre = ''
 
         await ctx.defer()
-        await self.recommendation_service.check_recommendation(
-            anilist_username=anilist_username,
-            media_type=media_type,
-            force_update=False,
-        )
+
+        try:
+            await self.recommendation_service.check_recommendation(
+                anilist_username=anilist_username,
+                media_type=media_type,
+                force_update=False,
+            )
+        except RequestError:
+            await ctx.send('Error obtaining data from Anilist. Please try again later.')
 
         view = RecView(
             self.recommendation_service,

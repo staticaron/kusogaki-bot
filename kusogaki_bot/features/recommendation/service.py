@@ -182,12 +182,15 @@ class RecommendationService:
         user_stats = await self.query_user_statistics(
             anilist_username=anilist_username, media_type=media_type
         )
+        if not user_stats:
+            RequestError('Error obtaining data from anilist.')
+
         list_data = await self.query_media_recs(
             anilist_username=anilist_username,
             media_type=media_type,
             watched_count=user_stats['count'],
         )
-        if not list_data or not user_stats:
+        if not list_data:
             raise RequestError('Error obtaining data from anilist.')
 
         return list_data, user_stats
@@ -356,17 +359,14 @@ class RecommendationService:
         except KeyError:
             time_delta = 0
         if anilist_username not in known_recs or force_update or time_delta > 345600:
-            try:
-                list_data, user_stats = await self.fetch_recommendations(
-                    anilist_username=anilist_username,
-                    media_type=media_type,
-                )
-                recommendation_scores = self.calculate_rec_scores(
-                    list_data=list_data,
-                    user_stats=user_stats,
-                )
-            except RequestError:
-                return None
+            list_data, user_stats = await self.fetch_recommendations(
+                anilist_username=anilist_username,
+                media_type=media_type,
+            )
+            recommendation_scores = self.calculate_rec_scores(
+                list_data=list_data,
+                user_stats=user_stats,
+            )
 
             if media_type.lower() == 'manga':
                 self.known_manga_recs[anilist_username] = {

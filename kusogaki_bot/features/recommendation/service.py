@@ -33,7 +33,7 @@ class RecommendationService:
         query User($name: String) {{
           User(name: $name) {{
             statistics {{
-              {media_type.lower()} {{
+              {media_type} {{
                 count
                 meanScore
                 standardDeviation
@@ -41,6 +41,13 @@ class RecommendationService:
                   count
                   genre
                   meanScore
+                }}
+              }}
+            }}
+            favourites {{
+              {media_type} {{
+                nodes {{
+                  id
                 }}
               }}
             }}
@@ -60,9 +67,11 @@ class RecommendationService:
             return None
         if not response.json()['data']['User']['statistics'][media_type]['count']:
             return None
-        user_statistics = response.json()['data']['User']['statistics'][media_type]
+        user_data = response.json()['data']['User']
+        favorites = [fav['id'] for fav in user_data['favourites'][media_type]['nodes']]
+        user_data['favourites'][media_type] = favorites
 
-        return user_statistics
+        return user_data
 
     async def query_media_recs(
         self, anilist_username: str, media_type: str, watched_count: int
@@ -165,7 +174,7 @@ class RecommendationService:
 
     async def fetch_recommendations(
         self, anilist_username: str, media_type: str
-    ) -> tuple[list, dict]:
+    ) -> tuple[list, dict, list]:
         """
         Wrapper function for fetching anilist data for animanga recs
 
@@ -174,16 +183,18 @@ class RecommendationService:
             media_type (str): Specifies anime or manga statistics
 
         Returns:
-            tuple: Tuple containing user list data and user statistics
+            tuple: Tuple containing user list data, user statistics, and favorites
 
         Raises:
             RequestError if either user statistics or list data is empty
         """
-        user_stats = await self.query_user_statistics(
+        user_data = await self.query_user_statistics(
             anilist_username=anilist_username, media_type=media_type
         )
-        if not user_stats:
+        if not user_data:
             RequestError('Error obtaining data from anilist.')
+        user_stats = user_data['statistics'][media_type]
+        user_favorites = user_data['favourites'][media_type]
 
         list_data = await self.query_media_recs(
             anilist_username=anilist_username,
@@ -193,10 +204,10 @@ class RecommendationService:
         if not list_data:
             raise RequestError('Error obtaining data from anilist.')
 
-        return list_data, user_stats
+        return list_data, user_stats, user_favorites
 
     def calculate_rec_scores(
-        self, list_data: list[dict], user_stats: dict
+        self, list_data: list[dict], user_stats: dict, user_favorites: list
     ) -> list[MediaRec]:
         """
         Scoring algorithm for animanga recs
@@ -204,6 +215,7 @@ class RecommendationService:
         Args:
             list_data (list[dict]): Anilist media list collection data
             user_stats (dict): Anilist user statistics
+            user_favorites (list[int]): List of user favorited media IDs
 
         Returns:
             list[MediaRec]: List of user's recommendations
@@ -242,6 +254,8 @@ class RecommendationService:
             max_rec_rating = entry['media']['recommendations']['nodes'][0]['rating']
             if max_rec_rating == 0:
                 continue
+
+            favorite_weight = 3 if entry['media']['id'] in user_favorites else 1
 
             for show_rec in entry['media']['recommendations']['nodes'][0:max_recs]:
                 # Filter out bad data from anilist
@@ -295,6 +309,7 @@ class RecommendationService:
                     (node_score + rec_show_score + rec_genre_score)
                     * rec_total_weight
                     * rec_pop_factor
+                    * favorite_weight
                 )
                 if show_rec['mediaRecommendation']['id'] not in recommendation_scores:
                     recommendation_scores[show_rec['mediaRecommendation']['id']] = (
@@ -359,13 +374,14 @@ class RecommendationService:
         except KeyError:
             time_delta = 0
         if anilist_username not in known_recs or force_update or time_delta > 345600:
-            list_data, user_stats = await self.fetch_recommendations(
+            list_data, user_stats, user_favorites = await self.fetch_recommendations(
                 anilist_username=anilist_username,
                 media_type=media_type,
             )
             recommendation_scores = self.calculate_rec_scores(
                 list_data=list_data,
                 user_stats=user_stats,
+                user_favorites=user_favorites,
             )
 
             if media_type.lower() == 'manga':

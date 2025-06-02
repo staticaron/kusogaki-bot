@@ -10,12 +10,14 @@ class MediaRec:
         score: float = 0,
         genres: list[str] = (),
         cover_url: str = None,
+        mean_score: float = None,
     ):
         self.media_id = media_id
         self.title = title
         self.score = score
         self.genres = genres
         self.cover_url = cover_url
+        self.mean_score = mean_score
 
     def __lt__(self, other):
         return self.score < other.score

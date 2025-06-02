@@ -323,6 +323,7 @@ class RecommendationService:
                             cover_url=show_rec['mediaRecommendation']['coverImage'][
                                 'large'
                             ],
+                            mean_score=show_rec['mediaRecommendation']['meanScore'],
                         )
                     )
                 recommendation_scores[
@@ -432,7 +433,8 @@ class RecommendationService:
 
         embed.description = f"""
 **{rec.title}** - https://anilist.co/{media_type}/{rec.media_id}/
-*Genres - {', '.join(rec.genres)}*
+*Mean Score: {rec.mean_score}%*
+Genres - {', '.join(rec.genres)}*
 *Recommendation strength - {rec.score:.2f}%*
 """
         embed.set_thumbnail(url=rec.cover_url)

@@ -433,8 +433,7 @@ class RecommendationService:
 
         embed.description = f"""
 **{rec.title}** - https://anilist.co/{media_type}/{rec.media_id}/
-*Mean Score: {rec.mean_score}%*
-Genres - {', '.join(rec.genres)}*
+{rec.mean_score}% | *{', '.join(rec.genres)}*
 *Recommendation strength - {rec.score:.2f}%*
 """
         embed.set_thumbnail(url=rec.cover_url)

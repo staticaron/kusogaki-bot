@@ -192,7 +192,7 @@ class RecommendationService:
             anilist_username=anilist_username, media_type=media_type
         )
         if not user_data:
-            RequestError('Error obtaining data from anilist.')
+            raise RequestError('Error obtaining data from anilist.')
         user_stats = user_data['statistics'][media_type]
         user_favorites = user_data['favourites'][media_type]
 

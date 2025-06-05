@@ -221,7 +221,7 @@ class RecommendationService:
             list[MediaRec]: List of user's recommendations
         """
         # Obtain max user score, collect watched show info
-        max_score = 0
+        max_score = 1
         max_popularity = 0
         seen_show_ids = []
         for entry in list_data:
@@ -239,10 +239,11 @@ class RecommendationService:
                 user_genre_scores[genre_name] = 0
             user_genre_scores[genre_name] = (
                 genre['meanScore'] - user_stats['meanScore']
-            ) / 100
+            ) / 100 + (genre['count'] - 0.5 * len(seen_show_ids)) / len(
+                seen_show_ids
+            ) * 0.16
 
         recommendation_scores: dict[int:MediaRec] = {}
-
         for entry in list_data:
             if not entry['media']['recommendations']['nodes']:
                 continue
@@ -281,7 +282,7 @@ class RecommendationService:
                     pass
 
                 # Scoring
-                node_score_weight = 0 if entry['score'] == 0 else 1
+                node_score_weight = 0 if entry['score'] == 0 else 0.8
                 node_score = node_score_weight * (
                     entry['score'] / max_score - user_stats['meanScore'] / 100
                 )
@@ -295,12 +296,14 @@ class RecommendationService:
                     1 - show_rec['mediaRecommendation']['popularity'] / max_popularity
                 )
                 rec_pop_factor = rec_pop_factor**1.5 if rec_pop_factor > 0 else 0.1
-                rec_genre_score_weight = 0.75
+                rec_genre_score_weight = 1.5
                 rec_genre_score = 0
                 for genre in show_rec['mediaRecommendation']['genres']:
                     try:
-                        rec_genre_score += user_genre_scores[genre]
-                    except KeyError:
+                        rec_genre_score += user_genre_scores[genre] / len(
+                            show_rec['mediaRecommendation']['genres']
+                        ) ** (1 / 2)
+                    except KeyError or ZeroDivisionError:
                         continue
                     rec_genre_score *= rec_genre_score_weight
 

@@ -41,7 +41,10 @@ class RecommendationCog(BaseCog):
                 force_update=False,
             )
         except RequestError:
-            await ctx.send('Error obtaining data from Anilist. Please try again later.')
+            await ctx.send(
+                'Error obtaining data from Anilist. Please check command parameters or try again later.'
+            )
+            return True
 
         view = RecView(
             self.recommendation_service,

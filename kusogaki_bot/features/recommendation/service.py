@@ -1,4 +1,4 @@
-from asyncio import gather
+from asyncio import Semaphore, gather, sleep
 from datetime import datetime
 from random import uniform
 from typing import Optional
@@ -130,26 +130,34 @@ class RecommendationService:
         """
 
         chunk_size = 100
+        max_concurrent = Semaphore(6)
 
         async def query_list_recommendations(session: AsyncClient, chunk):
-            req_vars = {
-                'userName': anilist_username,
-                'type': media_type.upper(),
-                'statusNotIn': 'PLANNING',
-                'perPage': 8,
-                'sort': 'RATING_DESC',
-                'perChunk': chunk_size,
-                'chunk': chunk,
-            }
-            try:
-                data = await session.post(
-                    url='https://graphql.anilist.co',
-                    json={'query': query, 'variables': req_vars},
-                    timeout=10,
-                )
-            except ReadTimeout:
-                return None
-            return data
+            max_attempts = 3
+            for attempt in range(max_attempts):
+                req_vars = {
+                    'userName': anilist_username,
+                    'type': media_type.upper(),
+                    'statusNotIn': 'PLANNING',
+                    'perPage': 8,
+                    'sort': 'RATING_DESC',
+                    'perChunk': chunk_size,
+                    'chunk': chunk,
+                }
+                async with max_concurrent:
+                    try:
+                        data = await session.post(
+                            url='https://graphql.anilist.co',
+                            json={'query': query, 'variables': req_vars},
+                            timeout=10,
+                        )
+                        if data.status_code == 200:
+                            return data
+                    except ReadTimeout:
+                        pass
+
+                await sleep((1.75**attempt) + uniform(0, 1))
+            return None
 
         tasks: list = []
 

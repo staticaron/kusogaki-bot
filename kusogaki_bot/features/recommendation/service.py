@@ -390,10 +390,7 @@ class RecommendationService:
         # Use cached data unless cached data does not exist or is outdated
         try:
             time_delta = (
-                datetime.now()
-                - datetime.strptime(
-                    known_recs[anilist_username]['date'], '%Y/%m/%d %H:%M:%S'
-                )
+                datetime.now() - known_recs[anilist_username]['date']
             ).total_seconds()
         except KeyError:
             time_delta = 0
@@ -407,17 +404,10 @@ class RecommendationService:
                 user_stats=user_stats,
                 user_favorites=user_favorites,
             )
-
-            if media_type.lower() == 'manga':
-                self.known_manga_recs[anilist_username] = {
-                    'date': datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
-                    'recs': recommendation_scores,
-                }
-            else:
-                self.known_anime_recs[anilist_username] = {
-                    'date': datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
-                    'recs': recommendation_scores,
-                }
+            known_recs[anilist_username] = {
+                'date': datetime.now(),
+                'recs': recommendation_scores,
+            }
 
         return None
 

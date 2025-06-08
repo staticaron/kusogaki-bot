@@ -228,9 +228,14 @@ class RecommendationService:
         Returns:
             list[MediaRec]: List of user's recommendations
         """
+        max_popularity = 0
+        global_mean = 65
+        genre_count_weight = 0.16
+        popularity_exp = 1.5
+        global_scale_exp = 0.35
+
         # Obtain max user score, collect watched show info
         max_score = 1
-        max_popularity = 0
         seen_show_ids = []
         for entry in list_data:
             seen_show_ids.append(entry['media']['id'])
@@ -239,17 +244,20 @@ class RecommendationService:
             if entry['media']['popularity'] > max_popularity:
                 max_popularity = entry['media']['popularity']
 
+        seen_show_ids = set(seen_show_ids)
+
         # Get user genre scores
         user_genre_scores = {}
         for genre in user_stats['genres']:
             genre_name = genre['genre']
             if not genre['meanScore']:
                 user_genre_scores[genre_name] = 0
-            user_genre_scores[genre_name] = (
-                genre['meanScore'] - user_stats['meanScore']
-            ) / 100 + (genre['count'] - 0.5 * len(seen_show_ids)) / len(
-                seen_show_ids
-            ) * 0.16
+            else:
+                user_genre_scores[genre_name] = (
+                    genre['meanScore'] - user_stats['meanScore']
+                ) / 100 + (genre['count'] - 0.5 * len(seen_show_ids)) / len(
+                    seen_show_ids
+                ) * genre_count_weight
 
         recommendation_scores: dict[int:MediaRec] = {}
         for entry in list_data:
@@ -273,7 +281,7 @@ class RecommendationService:
                 if show_rec['mediaRecommendation']['id'] in seen_show_ids:
                     continue
                 if not show_rec['mediaRecommendation']['meanScore']:
-                    show_rec['mediaRecommendation']['meanScore'] = 65
+                    show_rec['mediaRecommendation']['meanScore'] = global_mean
 
                 # Filter out shows with prequels that have not been seen yet
                 try:
@@ -289,22 +297,27 @@ class RecommendationService:
                 except KeyError:
                     pass
 
-                # Scoring
+                # Scoring weights
                 node_score_weight = 0 if entry['score'] == 0 else 0.8
-                node_score = node_score_weight * (
-                    entry['score'] / max_score - user_stats['meanScore'] / 100
-                )
                 rec_show_score_weight = 1
-                rec_show_score = (
-                    rec_show_score_weight
-                    * (show_rec['mediaRecommendation']['meanScore'] - 65)
-                    / 100
-                )
                 rec_pop_factor = (
                     1 - show_rec['mediaRecommendation']['popularity'] / max_popularity
                 )
-                rec_pop_factor = rec_pop_factor**1.5 if rec_pop_factor > 0 else 0.1
                 rec_genre_score_weight = 1.5
+                rec_pop_factor = (
+                    rec_pop_factor**popularity_exp if rec_pop_factor > 0 else 0.1
+                )
+                rec_total_weight = show_rec['rating'] / max_rec_rating
+
+                # Scoring
+                node_score = node_score_weight * (
+                    entry['score'] / max_score - user_stats['meanScore'] / 100
+                )
+                rec_show_score = (
+                    rec_show_score_weight
+                    * (show_rec['mediaRecommendation']['meanScore'] - global_mean)
+                    / 100
+                )
                 rec_genre_score = 0
                 for genre in show_rec['mediaRecommendation']['genres']:
                     try:
@@ -315,7 +328,6 @@ class RecommendationService:
                         continue
                     rec_genre_score *= rec_genre_score_weight
 
-                rec_total_weight = show_rec['rating'] / max_rec_rating
                 total_rec_score = (
                     (node_score + rec_show_score + rec_genre_score)
                     * rec_total_weight
@@ -353,7 +365,7 @@ class RecommendationService:
         # Normalize scores and apply filter for logical percentages
         max_score = recommendation_scores[0].score
         for rec in recommendation_scores:
-            rec.score = (rec.score / max_score) ** 0.35 * 100
+            rec.score = (rec.score / max_score) ** global_scale_exp * 100
 
         return recommendation_scores
 

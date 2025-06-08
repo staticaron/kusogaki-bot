@@ -1,7 +1,7 @@
 from asyncio import Semaphore, gather, sleep
 from datetime import datetime
 from random import uniform
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 from discord import Embed
 from httpx import AsyncClient, ReadTimeout, RequestError, post
@@ -18,7 +18,7 @@ class RecommendationService:
 
     async def query_user_statistics(
         self, anilist_username: str, media_type: str
-    ) -> Optional[dict]:
+    ) -> Optional[Dict]:
         """
         Queries anilist for user statistics used for weighting/scoring of animanga recommendations
 
@@ -75,7 +75,7 @@ class RecommendationService:
 
     async def query_media_recs(
         self, anilist_username: str, media_type: str, watched_count: int
-    ) -> Optional[list[dict]]:
+    ) -> Optional[List[Dict]]:
         """
         Queries anilist for user list data used for weighting/scoring of animanga recommendations
 
@@ -182,7 +182,7 @@ class RecommendationService:
 
     async def fetch_recommendations(
         self, anilist_username: str, media_type: str
-    ) -> tuple[list, dict, list]:
+    ) -> Tuple[List, Dict, List]:
         """
         Wrapper function for fetching anilist data for animanga recs
 
@@ -215,8 +215,8 @@ class RecommendationService:
         return list_data, user_stats, user_favorites
 
     def calculate_rec_scores(
-        self, list_data: list[dict], user_stats: dict, user_favorites: list
-    ) -> list[MediaRec]:
+        self, list_data: List[Dict], user_stats: Dict, user_favorites: List[int]
+    ) -> List[MediaRec]:
         """
         Scoring algorithm for animanga recs
 
@@ -324,7 +324,7 @@ class RecommendationService:
                         rec_genre_score += user_genre_scores[genre] / len(
                             show_rec['mediaRecommendation']['genres']
                         ) ** (1 / 2)
-                    except KeyError or ZeroDivisionError:
+                    except (KeyError, ZeroDivisionError):
                         continue
                     rec_genre_score *= rec_genre_score_weight
 

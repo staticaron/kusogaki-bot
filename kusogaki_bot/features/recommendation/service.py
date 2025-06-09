@@ -59,6 +59,7 @@ class RecommendationService:
         }}
         """
         variables = {'name': anilist_username}
+        logger.info(f'Querying user statistics for {anilist_username} ({media_type})')
         async with AsyncClient() as client:
             try:
                 response = await client.post(
@@ -66,7 +67,7 @@ class RecommendationService:
                     json={'query': query, 'variables': variables},
                 )
             except ReadTimeout as e:
-                logger.error(f'Error getting user statistics data: {e}')
+                logger.error(f'Request timed out fetching {anilist_username}: {e}')
                 return None
         if response.status_code == 200:
             user_data = response.json()['data']['User']
@@ -77,8 +78,8 @@ class RecommendationService:
                 ]
                 user_data['favourites'][media_type] = favorites
                 return user_data
-
-        logger.error(f'User statistics data not found for {anilist_username}')
+        else:
+            logger.error(f'Failed to fetch user statistics for {anilist_username}')
         return None
 
     async def query_media_recs(
@@ -152,6 +153,7 @@ class RecommendationService:
                     'perChunk': chunk_size,
                     'chunk': chunk,
                 }
+                logger.debug(f'Querying chunk {chunk} for {anilist_username}')
                 async with max_concurrent:
                     try:
                         data = await session.post(
@@ -165,10 +167,10 @@ class RecommendationService:
                         logger.warning(
                             f'List data chunk {chunk} for {anilist_username} timed out'
                         )
-
                 logger.warning(
-                    f'Failed to get list data chunk {chunk} for {anilist_username}, retrying'
+                    f'Attempt {attempt + 1}/{max_attempts} failed for chunk {chunk}'
                 )
+
                 await sleep((1.75**attempt) + uniform(0, 1))
             logger.warning(
                 f'Failed to get list data chunk {chunk} after {max_attempts}'
@@ -177,6 +179,7 @@ class RecommendationService:
 
         tasks: list = []
 
+        logger.info(f'Querying user list data for {anilist_username} ({media_type})')
         async with AsyncClient() as client:
             for i in range(1, watched_count // chunk_size + 2):
                 tasks.append(query_list_recommendations(client, i))
@@ -316,9 +319,10 @@ class RecommendationService:
                     ):
                         continue
                 except KeyError:
-                    logger.info(
-                        f'No relations found for {media_rec["title"]["romaji"]}'
+                    logger.debug(
+                        f'No related media found for {media_rec["title"]["romaji"]}'
                     )
+                    pass
 
                 rec_pop_factor = 1 - media_rec['popularity'] / max_popularity
                 rec_pop_factor = (
@@ -344,8 +348,8 @@ class RecommendationService:
                             media_rec['genres']
                         ) ** (1 / 2)
                     except (KeyError, ZeroDivisionError):
-                        logger.info(
-                            f'No genre data found for {media_rec["title"]["romaji"]}, genre scoring skipped'
+                        logger.debug(
+                            f'No user data for {genre} in {media_rec["title"]["romaji"]}, skipping genre score'
                         )
                     rec_genre_score *= model.rec_genre_score_weight
 
@@ -399,13 +403,19 @@ class RecommendationService:
         )
 
         # Use cached data unless cached data does not exist or is outdated
+        logger.info(
+            f'Checking recommendation cache for {anilist_username} ({media_type})'
+        )
+
         try:
             time_delta = (
                 datetime.now() - known_recs[anilist_username]['date']
             ).total_seconds()
         except KeyError:
             time_delta = 0
+
         if anilist_username not in known_recs or force_update or time_delta > 345600:
+            logger.debug(f'Cache age for {anilist_username}: {time_delta:.2f} seconds')
             list_data, user_stats, user_favorites = await self.fetch_recommendations(
                 anilist_username=anilist_username,
                 media_type=media_type,
@@ -419,6 +429,13 @@ class RecommendationService:
                 'date': datetime.now(),
                 'recs': recommendation_scores,
             }
+            logger.info(
+                f'Updated recommendations cache for {anilist_username} ({media_type})'
+            )
+        else:
+            logger.info(
+                f'Using cached recommendation data for {anilist_username} ({media_type})'
+            )
 
         return None
 

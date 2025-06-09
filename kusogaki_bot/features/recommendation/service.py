@@ -3,10 +3,11 @@ from datetime import datetime
 from random import uniform
 from typing import Dict, List, Optional, Tuple
 
-from discord import Embed
-from httpx import AsyncClient, ReadTimeout, RequestError, post
+from discord import Embed, File
+from httpx import AsyncClient, ReadTimeout, RequestError
 
-from kusogaki_bot.features.recommendation.data import MediaRec
+from kusogaki_bot.features.recommendation.data import MediaRec, RecScoringModel
+from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
 
 
 class RecommendationService:
@@ -55,19 +56,20 @@ class RecommendationService:
         }}
         """
         variables = {'name': anilist_username}
-
-        try:
-            response = post(
-                url='https://graphql.anilist.co',
-                json={'query': query, 'variables': variables},
-            )
-        except ReadTimeout:
-            return None
+        async with AsyncClient() as client:
+            try:
+                response = await client.post(
+                    url='https://graphql.anilist.co',
+                    json={'query': query, 'variables': variables},
+                )
+            except ReadTimeout:
+                return None
         if response.status_code != 200:
             return None
-        if not response.json()['data']['User']['statistics'][media_type]['count']:
-            return None
         user_data = response.json()['data']['User']
+        if not user_data['statistics'][media_type]['count']:
+            return None
+
         favorites = [fav['id'] for fav in user_data['favourites'][media_type]['nodes']]
         user_data['favourites'][media_type] = favorites
 
@@ -133,7 +135,7 @@ class RecommendationService:
         max_concurrent = Semaphore(6)
 
         async def query_list_recommendations(session: AsyncClient, chunk):
-            max_attempts = 3
+            max_attempts = 1
             for attempt in range(max_attempts):
                 req_vars = {
                     'userName': anilist_username,
@@ -228,23 +230,18 @@ class RecommendationService:
         Returns:
             list[MediaRec]: List of user's recommendations
         """
-        max_popularity = 0
-        global_mean = 65
-        genre_count_weight = 0.16
-        popularity_exp = 1.5
-        global_scale_exp = 0.35
+        model = RecScoringModel()
 
         # Obtain max user score, collect watched show info
         max_score = 1
-        seen_show_ids = []
+        max_popularity = 0
+        seen_show_ids = set()
         for entry in list_data:
-            seen_show_ids.append(entry['media']['id'])
+            seen_show_ids.add(entry['media']['id'])
             if entry['score'] > max_score:
                 max_score = entry['score']
             if entry['media']['popularity'] > max_popularity:
                 max_popularity = entry['media']['popularity']
-
-        seen_show_ids = set(seen_show_ids)
 
         # Get user genre scores
         user_genre_scores = {}
@@ -257,7 +254,7 @@ class RecommendationService:
                     genre['meanScore'] - user_stats['meanScore']
                 ) / 100 + (genre['count'] - 0.5 * len(seen_show_ids)) / len(
                     seen_show_ids
-                ) * genre_count_weight
+                ) * model.genre_count_weight
 
         recommendation_scores: dict[int:MediaRec] = {}
         for entry in list_data:
@@ -281,7 +278,7 @@ class RecommendationService:
                 if show_rec['mediaRecommendation']['id'] in seen_show_ids:
                     continue
                 if not show_rec['mediaRecommendation']['meanScore']:
-                    show_rec['mediaRecommendation']['meanScore'] = global_mean
+                    show_rec['mediaRecommendation']['meanScore'] = model.global_mean
 
                 # Filter out shows with prequels that have not been seen yet
                 try:
@@ -297,25 +294,25 @@ class RecommendationService:
                 except KeyError:
                     pass
 
-                # Scoring weights
-                node_score_weight = 0 if entry['score'] == 0 else 0.8
-                rec_show_score_weight = 1
                 rec_pop_factor = (
                     1 - show_rec['mediaRecommendation']['popularity'] / max_popularity
                 )
-                rec_genre_score_weight = 1.5
                 rec_pop_factor = (
-                    rec_pop_factor**popularity_exp if rec_pop_factor > 0 else 0.1
+                    rec_pop_factor**model.popularity_exp if rec_pop_factor > 0 else 0.1
                 )
                 rec_total_weight = show_rec['rating'] / max_rec_rating
 
                 # Scoring
-                node_score = node_score_weight * (
-                    entry['score'] / max_score - user_stats['meanScore'] / 100
+                node_score = (
+                    model.node_score_weight
+                    * (entry['score'] / max_score - user_stats['meanScore'] / 100)
+                    if entry['score'] != 0
+                    else 0
                 )
+
                 rec_show_score = (
-                    rec_show_score_weight
-                    * (show_rec['mediaRecommendation']['meanScore'] - global_mean)
+                    model.rec_show_score_weight
+                    * (show_rec['mediaRecommendation']['meanScore'] - model.global_mean)
                     / 100
                 )
                 rec_genre_score = 0
@@ -326,7 +323,7 @@ class RecommendationService:
                         ) ** (1 / 2)
                     except (KeyError, ZeroDivisionError):
                         continue
-                    rec_genre_score *= rec_genre_score_weight
+                    rec_genre_score *= model.rec_genre_score_weight
 
                 total_rec_score = (
                     (node_score + rec_show_score + rec_genre_score)
@@ -357,7 +354,7 @@ class RecommendationService:
 
         # Add random variation of +/- 20%, then sort recommendations by score
         for rec in recommendation_scores:
-            rec.score *= uniform(0.8, 1.2)
+            rec.score *= uniform(1 + model.score_variation, 1 - model.score_variation)
 
         recommendation_scores = [rec for rec in recommendation_scores if rec.score >= 0]
         recommendation_scores.sort(reverse=True)
@@ -365,7 +362,7 @@ class RecommendationService:
         # Normalize scores and apply filter for logical percentages
         max_score = recommendation_scores[0].score
         for rec in recommendation_scores:
-            rec.score = (rec.score / max_score) ** global_scale_exp * 100
+            rec.score = (rec.score / max_score) ** model.global_scale_exp * 100
 
         return recommendation_scores
 
@@ -411,9 +408,9 @@ class RecommendationService:
 
         return None
 
-    def get_rec_embed(
+    async def get_rec_embed(
         self, anilist_username: str, media_type: str, genre: str, page: int
-    ) -> Embed:
+    ) -> Tuple[Embed, Optional[File]]:
         """
         Generate an embed with the recommended media.
 
@@ -426,28 +423,36 @@ class RecommendationService:
         Returns:
             Embed: Embed displaying recommended media and corresponding information
         """
+
         if media_type == 'manga':
-            color = 0x7CD553
+            embed_type = EmbedType.MANGA
             recs = self.known_manga_recs[anilist_username]['recs']
+            title = f'**{anilist_username} Should Read:**'
         else:
-            color = 0x3BAFEB
+            embed_type = EmbedType.ANIME
             recs = self.known_anime_recs[anilist_username]['recs']
+            title = f'**{anilist_username} Should Watch:**'
 
         if genre:
             recs = [rec for rec in recs if genre in rec.genres]
 
-        embed = Embed(colour=color, title=f'Recommendation for {anilist_username}')
-        if not recs:
-            embed.description = "I couldn't find any recommendations!"
-            return embed
-
         max_page = min(20, len(recs))
-        rec = recs[page % max_page]
 
-        embed.description = f"""
+        if not recs:
+            description = "I couldn't find any recommendations!"
+            thumbnail = None
+        else:
+            rec = recs[page % max_page]
+            description = f"""
 **{rec.title}** - https://anilist.co/{media_type}/{rec.media_id}/
 {rec.mean_score}% | *{', '.join(rec.genres)}*
 *Recommendation strength - {rec.score:.2f}%*
 """
-        embed.set_thumbnail(url=rec.cover_url)
-        return embed
+            thumbnail = rec.cover_url
+
+        return await get_embed(
+            type=embed_type,
+            title=title,
+            description=description,
+            thumbnail_path=thumbnail,
+        )

@@ -26,6 +26,20 @@ class MediaRec:
         return isinstance(other, MediaRec) and other.media_id == self.media_id
 
 
+class RecScoringModel:
+    """Contains weights/factors/corrections for animanga rec scoring"""
+
+    global_mean = 65
+    genre_count_weight = 0.16
+    popularity_exp = 1.5
+    global_scale_exp = 0.35
+    node_score_weight = 0.8
+    favorite_weight = 3
+    rec_show_score_weight = 1
+    rec_genre_score_weight = 1.5
+    score_variation = 0.2
+
+
 class NextRecButton(Button):
     def __init__(self):
         super().__init__(
@@ -68,9 +82,10 @@ class RecView(View):
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         embed = None
+        file = None
         if interaction.data['custom_id'] == 'prev_rec':
             self.page -= 1
-            embed = self.rec_service.get_rec_embed(
+            embed, file = await self.rec_service.get_rec_embed(
                 anilist_username=self.anilist_username,
                 media_type=self.media_type,
                 genre=self.genre,
@@ -78,12 +93,14 @@ class RecView(View):
             )
         elif interaction.data['custom_id'] == 'next_rec':
             self.page += 1
-            embed = self.rec_service.get_rec_embed(
+            embed, file = await self.rec_service.get_rec_embed(
                 anilist_username=self.anilist_username,
                 media_type=self.media_type,
                 genre=self.genre,
                 page=self.page,
             )
 
-        await interaction.response.edit_message(embed=embed, view=self)
+        await interaction.response.edit_message(
+            embed=embed, attachments=[file], view=self
+        )
         return True

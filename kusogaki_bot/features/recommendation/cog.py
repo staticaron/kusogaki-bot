@@ -6,6 +6,7 @@ from httpx import RequestError
 from kusogaki_bot.core import BaseCog, KusogakiBot
 from kusogaki_bot.features.recommendation.data import RecView
 from kusogaki_bot.features.recommendation.service import RecommendationService
+from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
 
 
 class RecommendationCog(BaseCog):
@@ -41,9 +42,12 @@ class RecommendationCog(BaseCog):
                 force_update=False,
             )
         except RequestError:
-            await ctx.send(
-                'Error obtaining data from Anilist. Please check command parameters or try again later.'
+            embed, file = await get_embed(
+                type=EmbedType.ERROR,
+                title='Error',
+                description='Error obtaining data from Anilist. Please check command parameters or try again later.',
             )
+            await ctx.send(embed=embed, file=file)
             return True
 
         view = RecView(
@@ -52,13 +56,13 @@ class RecommendationCog(BaseCog):
             media_type=media_type,
             genre=genre,
         )
-        embed = self.recommendation_service.get_rec_embed(
+        embed, file = await self.recommendation_service.get_rec_embed(
             anilist_username=anilist_username,
             media_type=media_type,
             genre=genre,
             page=view.page,
         )
-        await ctx.send(embed=embed, view=view)
+        await ctx.send(embed=embed, file=file, view=view)
 
 
 async def setup(bot: commands.Bot):

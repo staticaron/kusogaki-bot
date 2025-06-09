@@ -318,7 +318,7 @@ class RecommendationService:
                         continue
                 except KeyError:
                     logger.info(
-                        f'No relations found for {media_rec['title']['romaji']}'
+                        f'No relations found for {media_rec["title"]["romaji"]}'
                     )
 
                 rec_pop_factor = 1 - media_rec['popularity'] / max_popularity
@@ -346,7 +346,7 @@ class RecommendationService:
                         ) ** (1 / 2)
                     except (KeyError, ZeroDivisionError):
                         logger.info(
-                            f'No genre data found for {media_rec['title']['romaji']}, genre scoring skipped'
+                            f'No genre data found for {media_rec["title"]["romaji"]}, genre scoring skipped'
                         )
                     rec_genre_score *= model.rec_genre_score_weight
 

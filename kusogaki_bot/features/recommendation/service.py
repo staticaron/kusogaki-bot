@@ -165,7 +165,6 @@ class RecommendationService:
                         logger.warning(
                             f'List data chunk {chunk} for {anilist_username} timed out'
                         )
-                        pass
 
                 logger.warning(
                     f'Failed to get list data chunk {chunk} for {anilist_username}, retrying'

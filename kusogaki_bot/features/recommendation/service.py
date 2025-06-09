@@ -285,7 +285,11 @@ class RecommendationService:
             if max_rec_rating == 0:
                 continue
 
-            favorite_weight = 3 if list_entry['media']['id'] in user_favorites else 1
+            favorite_weight = (
+                model.favorite_weight
+                if list_entry['media']['id'] in user_favorites
+                else 1
+            )
 
             for show_rec in list_entry['media']['recommendations']['nodes'][
                 0:max_show_recs

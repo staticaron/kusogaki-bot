@@ -171,7 +171,7 @@ class RecommendationService:
                     f'Attempt {attempt + 1}/{max_attempts} failed for chunk {chunk}'
                 )
 
-                await sleep((1.75**attempt) + uniform(0, 1))
+                await sleep((2**attempt) + uniform(0, 1))
             logger.warning(
                 f'Failed to get list data chunk {chunk} after {max_attempts}'
             )

@@ -138,7 +138,7 @@ class RecommendationService:
         }
         """
 
-        chunk_size = 75
+        chunk_size = 90
         max_concurrent = Semaphore(6)
 
         async def query_list_recommendations(session: AsyncClient, chunk):

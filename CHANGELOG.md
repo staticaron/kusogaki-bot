@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.8.0](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.7.1...v0.8.0) (2025-06-17)
+
+
+### Features
+
+* add recommendation command ([d583e99](https://github.com/kusogaki-events/kusogaki-bot/commit/d583e99b466b98c590698586e81db378fa8ed5b9))
+* animanga recommendation groundwork ([2bea7f0](https://github.com/kusogaki-events/kusogaki-bot/commit/2bea7f0104c5569259ee4b31de7e1570011cca16))
+* Show recommendation mean score in embed ([bf056a7](https://github.com/kusogaki-events/kusogaki-bot/commit/bf056a7f2df4309814acc8444adb8403a886e8be))
+* update rec UI to use embeds, add ability to show all recs ([c95a02a](https://github.com/kusogaki-events/kusogaki-bot/commit/c95a02aeecafe54fc048ce0b4cbc9c7c9a230ace))
+* use prev/next buttons to cycle through recommendations ([aecf30e](https://github.com/kusogaki-events/kusogaki-bot/commit/aecf30eb169b3b2a539f1b7d2552f83a1c8a6f1e))
+* weight favorited anime in recs ([1ac5187](https://github.com/kusogaki-events/kusogaki-bot/commit/1ac51872d1ff139c2c2f3bf00a22ac24b505b6b7))
+
+
+### Bug Fixes
+
+* add httpx dependency ([6600750](https://github.com/kusogaki-events/kusogaki-bot/commit/6600750e0050b8620c038bb96785132276b2c6e9))
+* add random rec score before sorting to avoid mismatched entries ([333878d](https://github.com/kusogaki-events/kusogaki-bot/commit/333878d77cfeecb024efe365b485e80d941b776c))
+* add rate limiting to medialist API requests ([90b822a](https://github.com/kusogaki-events/kusogaki-bot/commit/90b822a8733e3c3b3fd7d6b80f392271e466758f))
+* adjust retry wait period ([b8a3af6](https://github.com/kusogaki-events/kusogaki-bot/commit/b8a3af629dc41a9e94741f6c6f06fb14bb8a7f10))
+* clean up deprecated vars + code ([7656cca](https://github.com/kusogaki-events/kusogaki-bot/commit/7656ccadcaba40ba8bcb7ebde971f742e162eff1))
+* divide by zero when no scores exist; scoring algorithm changes ([3f913fc](https://github.com/kusogaki-events/kusogaki-bot/commit/3f913fc3332b6c4f11eb769ea36398347aeb7de0))
+* do not recommend dropped shows ([2ffdb50](https://github.com/kusogaki-events/kusogaki-bot/commit/2ffdb50529920b75317cdcb45f4bb50c2a33fc56))
+* error handling when request does not return valid data ([4bab58b](https://github.com/kusogaki-events/kusogaki-bot/commit/4bab58b7d7614eeb856e9f8cace5e5af993109e0))
+* exit nicely on command error ([bffa2c0](https://github.com/kusogaki-events/kusogaki-bot/commit/bffa2c04f9551968685e72ba8b308978de2eb0f7))
+* improve logging ([5e4cb5a](https://github.com/kusogaki-events/kusogaki-bot/commit/5e4cb5a6c723d64ef84b478aa41bdd2dc91af2d4))
+* raise chunk size for less requests ([c65d76d](https://github.com/kusogaki-events/kusogaki-bot/commit/c65d76d958d7309b215500abea4bfae1dc962829))
+* raise request error properly if request fails ([225ab85](https://github.com/kusogaki-events/kusogaki-bot/commit/225ab857faec012b577f112980f4051e72a4e963))
+* rec embed formatting ([85a56ab](https://github.com/kusogaki-events/kusogaki-bot/commit/85a56ab1eea8d0b9945ea7655cca4ef2c95b68ea))
+* remove dropped shows from rec consideration ([a718639](https://github.com/kusogaki-events/kusogaki-bot/commit/a7186392131d8dee6c996969cf0c5bc9d542b9b7))
+* remove erroneus genre filtering ([c36e7d9](https://github.com/kusogaki-events/kusogaki-bot/commit/c36e7d9213d50b15b01a391d914a43374a2bdd0d))
+* specifying media type without genre now returns correctly ([327c3cb](https://github.com/kusogaki-events/kusogaki-bot/commit/327c3cb8af78ad89c323196d743d87e873fec061))
+* use shared embed type instead of discord's ([54822b3](https://github.com/kusogaki-events/kusogaki-bot/commit/54822b3e938440ea7ff30f14a3625b2e44cfb62f))
+* use weight defined in model ([139b62a](https://github.com/kusogaki-events/kusogaki-bot/commit/139b62aefb7f55e772a73644af808d2b14a30a71))
+* zero division error handling ([af6f6e9](https://github.com/kusogaki-events/kusogaki-bot/commit/af6f6e99deca7deb5df3453738d242db7514b64a))
+
+
+### Documentation
+
+* add help information for rec commands ([f156ff2](https://github.com/kusogaki-events/kusogaki-bot/commit/f156ff20772e2df606942f55cf1949416cbec6c0))
+* add rec command ([1bdd779](https://github.com/kusogaki-events/kusogaki-bot/commit/1bdd7796cc1dc7efa5838548f90b1d7d6cb36870))
+
 ## [0.7.1](https://github.com/kusogaki-events/kusogaki-bot/compare/v0.7.0...v0.7.1) (2025-05-20)
 
 

@@ -106,7 +106,7 @@ class GTARepository:
 
         self.db = MongoDatabase.get_db()
 
-    def get_images_batch(self, difficulty: str, used_ids: Set[int], limit: int = 20) -> List[Tuple[GTAImage, List[str]]]:
+    async def get_images_batch(self, difficulty: str, used_ids: Set[int], limit: int = 20) -> List[Tuple[GTAImage, List[str]]]:
         """
         Get a batch of random images and their options efficiently.
 
@@ -159,7 +159,7 @@ class GTARepository:
             logger.error(f'Failed to get image batch: {str(e)}')
             raise DatabaseError(f'Failed to get image batch: {str(e)}') from e
 
-    def get_random_unused_image(self, difficulty: str, used_ids: set[int]) -> Optional[Tuple[GTAImage, List[str]]]:
+    async def get_random_unused_image(self, difficulty: str, used_ids: set[int]) -> Optional[Tuple[GTAImage, List[str]]]:
         """
         Get random unused image and wrong options strictly matching the difficulty.
 
@@ -181,7 +181,7 @@ class GTARepository:
 
             names: List[str] = []
 
-            image_cursor = self.db['gta-images'].find_one(images_query, projection={'_id': False})
+            image_cursor = await self.db['gta-images'].find_one(images_query, projection={'_id': False})
             names_cursor = self.db['gta_images'].find(names_query, projection={'anime_name': True, '_id': False})
 
             gta_image: GTAImage = GTAImage()
@@ -204,7 +204,7 @@ class GTARepository:
             logger.error(f'Failed to get random unused image: {str(e)}')
             raise DatabaseError(f'Failed to get random unused image: {str(e)}') from e
 
-    def get_leaderboard(self, limit: int = 5) -> List[LeaderboardEntry]:
+    async def get_leaderboard(self, limit: int = 5) -> List[LeaderboardEntry]:
         """
         Get top leaderboard entries.
 
@@ -240,7 +240,7 @@ class GTARepository:
             logger.error(f'Failed to get leaderboard: {str(e)}')
             raise DatabaseError(f'Failed to get leaderboard: {str(e)}') from e
 
-    def get_player_entry(self, user_id: int) -> Optional[LeaderboardEntry]:
+    async def get_player_entry(self, user_id: int) -> Optional[LeaderboardEntry]:
         """
         Get a player's leaderboard entry.
 
@@ -257,7 +257,7 @@ class GTARepository:
         try:
             query = {'user': str(user_id)}
 
-            leaderboard_cursor = self.db['gta_game_leaderboard'].find_one(query)
+            leaderboard_cursor = await self.db['gta_game_leaderboard'].find_one(query)
 
             entry: LeaderboardEntry = LeaderboardEntry()
 
@@ -273,7 +273,7 @@ class GTARepository:
             logger.error(f'Failed to get player entry: {str(e)}')
             raise DatabaseError(f'Failed to get player entry: {str(e)}') from e
 
-    def update_player_score(self, user_id: int, display_name: str, score: int) -> Optional[int]:
+    async def update_player_score(self, user_id: int, display_name: str, score: int) -> Optional[int]:
         """
         Update a player's score.
 
@@ -292,19 +292,19 @@ class GTARepository:
         try:
             query = {'user': str(user_id)}
 
-            user_details = self.db['gta_game_leaderboard'].find_one(query)
+            user_details = await self.db['gta_game_leaderboard'].find_one(query)
 
             if user_details:
                 if user_details.get('highest_score') < score:
                     updates = {'display_name': display_name, 'highest_score': score}
-                    self.db['gta_game_leaderboard'].update_one(query, update={'$set': updates})
-                    self._update_rankings()
+                    await self.db['gta_game_leaderboard'].update_one(query, update={'$set': updates})
+                    await self._update_rankings()
                 else:
                     return user_details.get('highest_score')
 
             else:
                 user_details = {'user': user_id, 'display_name': display_name, 'highest_score': score, 'place': 0, 'id': 0}
-                self.db['gta_game_leaderboard'].insert_one(user_details)
+                await self.db['gta_game_leaderboard'].insert_one(user_details)
 
             return score
 
@@ -312,7 +312,7 @@ class GTARepository:
             logger.error(f'Failed to update player score: {str(e)}')
             raise DatabaseError(f'Failed to update player score: {str(e)}') from e
 
-    def _update_rankings(self) -> None:
+    async def _update_rankings(self) -> None:
         """
         Update all rankings after a score change.
 
@@ -325,8 +325,10 @@ class GTARepository:
         try:
             entries = entries = self.db['gta_game_leaderboard'].find({}).sort({'highest_score': -1})
 
-            for i, e in enumerate(entries, 1):
-                self.db['gta_game_leaderboard'].update_one({'user': e.get('user')}, update={'$set': {'place': i}})
+            place = 1
+            async for entry in entries:
+                await self.db['gta_game_leaderboard'].update_one({'user': entry.get('user')}, update={'$set': {'place': place}})
+                place = place + 1
 
         except Exception as e:
             logger.error(f'Failed to update rankings: {str(e)}')

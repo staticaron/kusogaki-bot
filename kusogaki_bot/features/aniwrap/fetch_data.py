@@ -1,3 +1,6 @@
+import pdb
+
+from discord import user
 import requests
 
 import config
@@ -11,9 +14,11 @@ class UserData:
     anime_count: int = 0
     anime_eps: int = 0
     anime_mean_score: float = 0.0
+    anime_img_url: str = ''
     manga_count: int = 0
     manga_chaps: int = 0
     manga_mean_score: float = 0.0
+    manga_img_url: str = ''
 
 
 def get_user_id_from_username(username: str) -> str:
@@ -70,9 +75,11 @@ def fetch_user_data(username: str) -> UserData:
     user_data.anime_count = data['AnimeCompleted']
     user_data.anime_eps = data['EpisodesWatched']
     user_data.anime_mean_score = data['AnimeMeanScore']
+    user_data.anime_img_url = data['TopAnime'][0]['ImageUrl']
 
     user_data.manga_count = data['MangaCompleted']
     user_data.manga_chaps = data['ChaptersRead']
     user_data.manga_mean_score = data['MangaMeanScore']
+    user_data.manga_img_url = data['TopManga'][0]['ImageUrl']
 
     return user_data

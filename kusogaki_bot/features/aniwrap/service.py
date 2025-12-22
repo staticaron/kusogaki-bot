@@ -1,6 +1,9 @@
 import json
+import pdb
+from io import BytesIO
 from string import Template
 
+import requests
 from PIL import Image, ImageDraw, ImageFont
 
 from kusogaki_bot.features.aniwrap.fetch_data import UserData, fetch_user_data
@@ -24,11 +27,6 @@ FONT_LOCATION = {
 
 ELEMENTS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/elements.json'
 ANCHORS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/anchors.json'
-
-IMAGE_LOCATION = {
-    'anime': 'kusogaki_bot/features/aniwrap/images/anime.png',
-    'manga': 'kusogaki_bot/features/aniwrap/images/manga.png',
-}
 
 
 class AniWrapService:
@@ -154,6 +152,7 @@ class AniWrapService:
     def render_image(
         self,
         drawImage: Image.Image,
+        url: str,
         anchor_data: dict,
         element_data: dict,
         image_data: dict,
@@ -162,10 +161,10 @@ class AniWrapService:
         y_offset = image_data['y_offset']
         width = image_data['width']
         height = image_data['height']
-        src = image_data['src']
         anchor = image_data.get('anchor', 'main_anchor')
 
-        image: Image.Image = Image.open(src)
+        image_response = requests.get(url)
+        image: Image.Image = Image.open(BytesIO(image_response.content))
 
         aspect_ratio = image.width / image.height
 
@@ -217,8 +216,6 @@ class AniWrapService:
             raw_data = file_in.read()
             template = Template(raw_data)
             raw_data = template.substitute(
-                anime_img=IMAGE_LOCATION['anime'],
-                manga_img=IMAGE_LOCATION['manga'],
                 anime_count=user_data.anime_count,
                 anime_eps=user_data.anime_eps,
                 anime_mean=str(round(user_data.anime_mean_score, 1)) + '%',
@@ -270,7 +267,13 @@ class AniWrapService:
 
         # Anime Details
         self.render_text(draw, anchor_data, element_data, element_data['anime'])
-        self.render_image(img, anchor_data, element_data, element_data['anime_img'])
+        self.render_image(
+            img,
+            user_data.anime_img_url,
+            anchor_data,
+            element_data,
+            element_data['anime_img'],
+        )
 
         self.render_text(
             draw, anchor_data, element_data, element_data['anime_count_text']
@@ -288,7 +291,13 @@ class AniWrapService:
 
         # Manga Details
         self.render_text(draw, anchor_data, element_data, element_data['manga'])
-        self.render_image(img, anchor_data, element_data, element_data['manga_img'])
+        self.render_image(
+            img,
+            user_data.manga_img_url,
+            anchor_data,
+            element_data,
+            element_data['manga_img'],
+        )
 
         element_data['manga_count'] = self.render_text_right(
             draw, anchor_data, element_data, element_data['manga_count']
@@ -320,7 +329,5 @@ class AniWrapService:
         self.render_vertical_divider(draw, anchor_data, element_data['divider'])
 
         img = self.apply_rounded_corners(img, IMG_WIDTH, IMG_HEIGHT, 8)
-
-        img.show(f'{username}')
 
         img.save(f'wraps/{username}.png')

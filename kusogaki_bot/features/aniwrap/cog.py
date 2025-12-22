@@ -1,3 +1,5 @@
+import os
+
 import discord
 from discord.ext import commands
 
@@ -23,6 +25,8 @@ class AniWrapCog(BaseCog):
         self.service.generate(username)
         wrap_file = discord.File(f'wraps/{username}.png')
         await ctx.channel.send('This is your Wrap', file=wrap_file)
+
+        os.remove(f'wraps/{username}.png')
 
 
 async def setup(bot: commands.Bot):

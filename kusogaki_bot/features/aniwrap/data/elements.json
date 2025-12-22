@@ -1,0 +1,208 @@
+{
+	"unofficial" : {
+		"text" : "UNOFFICIAL",
+		"anchor" : "main_anchor",
+		"x_offset" : null,
+		"y_offset" : 0,
+		"size" : 80,
+		"color" : "dull",
+		"font" : "inpin"
+	},
+	"heading" : {	
+		"text" : "ANILIST WRAPPED 2025",
+		"anchor" : "main_anchor",
+		"x_offset" : null,
+		"y_offset" : 30,
+		"size" : 35,
+		"color" : "hl",
+		"font" : "inpin"
+	},
+	"divider" : {
+		"anchor" : "main_anchor",
+		"x_offset" : 0,
+		"y_offset" : 110,
+		"len" : 160,
+		"width" : 7,
+		"color" : "bdull"
+	},
+	"anime_img" : {
+		"src" : "$anime_img",
+		"anchor" : "anime_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 0,
+		"width" : null,
+		"height" : 233
+	},
+	"manga_img" : {
+		"src" : "$manga_img",
+		"anchor" : "manga_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 0,
+		"width" : null,
+		"height" : 233	
+	},
+	"anime" : {
+		"text" : "ANIME",
+		"anchor" : "anime_anchor",
+		"x_offset" : 0,
+		"y_offset" : 37,
+		"size" : 25,
+		"color" : "bdull",
+		"font" : "inpin"
+	},
+	"manga" : {	
+		"text" : "MANGA",
+		"anchor" : "manga_anchor",
+		"x_offset" : 0,
+		"y_offset" : 37,
+		"size" : 25,
+		"color" : "bdull",
+		"font" : "inpin"
+
+	},
+	"anime_count_text" : {	
+		"text" : "COUNT: ",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 0,
+		"size" : 30,
+		"color" : "hl",
+		"font" : "inpin"
+
+	},
+	"anime_count" : {	
+		"text" : "$anime_count",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 130,
+		"y_offset" : 0,
+		"size" : 30,
+		"color" : "fg",
+		"font" : "inpin"
+
+	},
+	"anime_eps_text" : {	
+		"text" : "EPISODES: ",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 50,
+		"size" : 30,
+		"color" : "hl",
+		"font" : "inpin"
+
+	},
+	"anime_eps" : {	
+		"text" : "$anime_eps",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 180,
+		"y_offset" : 50,
+		"size" : 30,
+		"color" : "fg",
+		"font" : "inpin"
+
+	},
+	"anime_mean_text" : {	
+		"text" : "MEAN SCORE: ",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 100,
+		"size" : 30,
+		"color" : "hl",
+		"font" : "inpin"
+
+	},
+	"anime_mean" : {	
+		"text" : "$anime_mean",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 240,
+		"y_offset" : 100,
+		"size" : 30,
+		"color" : "fg",
+		"font" : "inpin"
+
+	},
+	"manga_count_text" : {	
+		"after" : "manga_count",
+		"text" : "COUNT: ",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 0,
+		"size" : 30,
+		"color" : "hl",
+		"font" : "inpin"
+
+	},
+	"manga_count" : {	
+		"after" : "",
+		"text" : "$manga_count",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 0,
+		"size" : 30,
+		"color" : "fg",
+		"font" : "inpin"
+
+	},
+	"manga_chaps_text" : {	
+		"after" : "manga_chaps",
+		"text" : "CHAPTERS: ",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 0,
+		"size" : 30,
+		"color" : "hl",
+		"font" : "inpin"
+
+	},
+	"manga_chaps" : {	
+		"after" : "",
+		"text" : "$manga_chaps",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 50,
+		"size" : 30,
+		"color" : "fg",
+		"font" : "inpin"
+
+	},
+	"manga_mean_text" : {	
+		"after" : "manga_mean",
+		"text" : "MEAN SCORE: ",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 0,
+		"size" : 30,
+		"color" : "hl",
+		"font" : "inpin"
+
+	},
+	"manga_mean" : {	
+		"after" : "",
+		"text" : "$manga_mean",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : 100,
+		"size" : 30,
+		"color" : "fg",
+		"font" : "inpin"
+
+	},
+	"anime_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "anime_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"color" : "fg",
+		"font" : "overpass-semibold"
+
+	},
+	"manga_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "manga_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"color" : "fg",
+		"font" : "overpass-semibold"
+	}
+}

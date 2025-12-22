@@ -1,4 +1,5 @@
 import logging
+import pdb
 from pathlib import Path
 from typing import List
 
@@ -58,6 +59,9 @@ class KusogakiBot(commands.AutoShardedBot):
                 logger.info(f'Loaded feature: {feature_dir.name} ({cog_path})')
             except Exception as e:
                 logger.error(f'Failed to load feature {feature_dir.name}: {str(e)}')
+
+        # INFO: Removed GTA cog for causing errors with image preloading
+        await self.unload_extension('kusogaki_bot.features.guess_the_anime.cog')
 
     async def setup_hook(self) -> None:
         """

@@ -6,7 +6,7 @@
 		"y_offset" : 0,
 		"size" : 80,
 		"color" : "dull",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 	},
 	"heading" : {	
 		"text" : "ANILIST WRAPPED 2025",
@@ -15,7 +15,7 @@
 		"y_offset" : 30,
 		"size" : 35,
 		"color" : "hl",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 	},
 	"divider" : {
 		"anchor" : "main_anchor",
@@ -46,7 +46,7 @@
 		"y_offset" : 37,
 		"size" : 25,
 		"color" : "bdull",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 	},
 	"manga" : {	
 		"text" : "MANGA",
@@ -55,7 +55,7 @@
 		"y_offset" : 37,
 		"size" : 25,
 		"color" : "bdull",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"anime_count_text" : {	
@@ -65,7 +65,7 @@
 		"y_offset" : 0,
 		"size" : 30,
 		"color" : "hl",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"anime_count" : {	
@@ -75,7 +75,7 @@
 		"y_offset" : 0,
 		"size" : 30,
 		"color" : "fg",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"anime_eps_text" : {	
@@ -85,7 +85,7 @@
 		"y_offset" : 50,
 		"size" : 30,
 		"color" : "hl",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"anime_eps" : {	
@@ -95,7 +95,7 @@
 		"y_offset" : 50,
 		"size" : 30,
 		"color" : "fg",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"anime_mean_text" : {	
@@ -105,7 +105,7 @@
 		"y_offset" : 100,
 		"size" : 30,
 		"color" : "hl",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"anime_mean" : {	
@@ -115,7 +115,7 @@
 		"y_offset" : 100,
 		"size" : 30,
 		"color" : "fg",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"manga_count_text" : {	
@@ -126,7 +126,7 @@
 		"y_offset" : 0,
 		"size" : 30,
 		"color" : "hl",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"manga_count" : {	
@@ -137,7 +137,7 @@
 		"y_offset" : 0,
 		"size" : 30,
 		"color" : "fg",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"manga_chaps_text" : {	
@@ -148,7 +148,7 @@
 		"y_offset" : 0,
 		"size" : 30,
 		"color" : "hl",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"manga_chaps" : {	
@@ -159,7 +159,7 @@
 		"y_offset" : 50,
 		"size" : 30,
 		"color" : "fg",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"manga_mean_text" : {	
@@ -170,7 +170,7 @@
 		"y_offset" : 0,
 		"size" : 30,
 		"color" : "hl",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"manga_mean" : {	
@@ -181,7 +181,7 @@
 		"y_offset" : 100,
 		"size" : 30,
 		"color" : "fg",
-		"font" : "inpin"
+		"font" : "overpass-extrabold"
 
 	},
 	"anime_highest_rated_text" : {

@@ -1,12 +1,29 @@
 {
+	"unofficial" : {
+		"text" : "UNOFFICIAL",
+		"anchor" : "main_anchor",
+		"x_offset" : null,
+		"y_offset" : 0,
+		"size" : 80,
+		"color" : "dull",
+		"font" : "overpass-extrabold"
+	},
 	"heading" : {	
 		"text" : "ANILIST WRAPPED 2025",
 		"anchor" : "main_anchor",
 		"x_offset" : null,
-		"y_offset" : 25,
+		"y_offset" : 20,
 		"size" : 40,
 		"color" : "hl",
 		"font" : "overpass-extrabold"
+	},
+	"divider" : {
+		"anchor" : "main_anchor",
+		"x_offset" : 0,
+		"y_offset" : 110,
+		"len" : 160,
+		"width" : 7,
+		"color" : "bdull"
 	},
 	"anime_img" : {
 		"anchor" : "anime_image_anchor",
@@ -22,6 +39,25 @@
 		"width" : null,
 		"height" : 233	
 	},
+	"anime" : {
+		"text" : "ANIME",
+		"anchor" : "anime_anchor",
+		"x_offset" : 0,
+		"y_offset" : 37,
+		"size" : 35,
+		"color" : "bdull",
+		"font" : "overpass-extrabold"
+	},
+	"manga" : {	
+		"text" : "MANGA",
+		"anchor" : "manga_anchor",
+		"x_offset" : 0,
+		"y_offset" : 37,
+		"size" : 35,
+		"color" : "bdull",
+		"font" : "overpass-extrabold"
+
+	},
 	"anime_count_text" : {	
 		"text" : "COUNT: ",
 		"anchor" : "anime_details_anchor",
@@ -35,8 +71,7 @@
 	"anime_count" : {	
 		"text" : "$anime_count",
 		"anchor" : "anime_details_anchor",
-		"after" : "anime_count_text",
-		"x_offset" : 0,
+		"x_offset" : 135,
 		"y_offset" : 0,
 		"size" : 35,
 		"color" : "fg",
@@ -56,9 +91,8 @@
 	"anime_eps" : {	
 		"text" : "$anime_eps",
 		"anchor" : "anime_details_anchor",
-		"after" : "anime_eps_text",
-		"x_offset" : 0,
-		"y_offset" : 0,
+		"x_offset" : 180,
+		"y_offset" : 50,
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
@@ -77,9 +111,8 @@
 	"anime_mean" : {	
 		"text" : "$anime_mean",
 		"anchor" : "anime_details_anchor",
-		"after" : "anime_mean_text",
-		"x_offset" : 0,
-		"y_offset" : 0,
+		"x_offset" : 240,
+		"y_offset" : 100,
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
@@ -150,5 +183,24 @@
 		"color" : "fg",
 		"font" : "overpass-extrabold"
 
+	},
+	"anime_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "anime_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"color" : "fg",
+		"font" : "overpass-semibold"
+
+	},
+	"manga_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "manga_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"color" : "fg",
+		"font" : "overpass-semibold"
 	}
 }

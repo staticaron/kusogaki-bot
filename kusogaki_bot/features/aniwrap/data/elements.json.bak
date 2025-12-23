@@ -1,0 +1,57 @@
+{
+	"unofficial" : {
+		"text" : "UNOFFICIAL",
+		"anchor" : "main_anchor",
+		"x_offset" : null,
+		"y_offset" : 0,
+		"size" : 80,
+		"color" : "dull",
+		"font" : "overpass-extrabold"
+	},
+	"divider" : {
+		"anchor" : "main_anchor",
+		"x_offset" : 0,
+		"y_offset" : 110,
+		"len" : 160,
+		"width" : 7,
+		"color" : "bdull"
+	},
+	"anime" : {
+		"text" : "ANIME",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : -57,
+		"size" : 40,
+		"color" : "bdull",
+		"font" : "overpass-extrabold"
+	},
+	"manga" : {	
+		"text" : "MANGA",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : -57,
+		"size" : 40,
+		"color" : "bdull",
+		"font" : "overpass-extrabold"
+
+	},
+	"anime_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "anime_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"color" : "fg",
+		"font" : "overpass-semibold"
+
+	},
+	"manga_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "manga_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"color" : "fg",
+		"font" : "overpass-semibold"
+	}
+}

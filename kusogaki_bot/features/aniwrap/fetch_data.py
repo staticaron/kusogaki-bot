@@ -1,10 +1,12 @@
+import logging
 import pdb
 
-from discord import user
 import requests
 
 import config
 from kusogaki_bot.features.aniwrap.query import user_query
+
+logger = logging.getLogger(__name__)
 
 
 class UserData:
@@ -19,6 +21,7 @@ class UserData:
     manga_chaps: int = 0
     manga_mean_score: float = 0.0
     manga_img_url: str = ''
+    profile_color: str = '#D777CA'
 
 
 def get_user_id_from_username(username: str) -> str:
@@ -30,8 +33,8 @@ def get_user_id_from_username(username: str) -> str:
             json={'query': user_query, 'variables': {'username': username}},
         ).json()
     except Exception as e:
-        print(f'ERROR while getting userid from username ( anilist ) \n{e}')
-        return '234256'
+        logger.error(f'ERROR while getting userid from username ( anilist ) \n{e}')
+        return ''
 
     return response.get('data', {}).get('User', {}).get('id', '234345')
 
@@ -39,13 +42,20 @@ def get_user_id_from_username(username: str) -> str:
 def fetch_user_data(username: str) -> UserData:
     """Fetch user from kusogaki api using username"""
 
+    user_data: UserData = UserData()
+
     user_id = get_user_id_from_username(username)
+
+    if user_id == '':
+        user_data.error = True
+        user_data.error_msg = 'Failed to get UserID from username!'
+        logger.error(user_data.error_msg)
+        return user_data
 
     url = f'https://kusogaki.co/api/alwrap/statistics/{user_id}'
     params = {'wrapYear': 2024}
     headers = {'Authorization': f'Bearer {config.KUSOGAKI_TOKEN}'}
 
-    user_data: UserData = UserData()
     data = {}
 
     try:
@@ -60,13 +70,13 @@ def fetch_user_data(username: str) -> UserData:
         data = response.json()
 
     except requests.exceptions.HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+        logger.error(f'HTTP error occurred: {http_err}')
         user_data.error = True
         user_data.error_msg = f'HTTP error occurred: {http_err}'
         return user_data
 
     except Exception as err:
-        print(f'Error occurred: {err}')
+        logger.error(f'Error occurred: {err}')
         user_data.error = True
         user_data.error_msg = f'Error occurred: {err}'
         return user_data
@@ -81,5 +91,7 @@ def fetch_user_data(username: str) -> UserData:
     user_data.manga_chaps = data['ChaptersRead']
     user_data.manga_mean_score = data['MangaMeanScore']
     user_data.manga_img_url = data['TopManga'][0]['ImageUrl']
+
+    user_data.profile_color = data['TextColor']
 
     return user_data

@@ -1,4 +1,5 @@
 import json
+import logging
 import pdb
 from io import BytesIO
 from string import Template
@@ -7,6 +8,8 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 
 from kusogaki_bot.features.aniwrap.fetch_data import UserData, fetch_user_data
+
+logger = logging.getLogger(__name__)
 
 IMG_WIDTH = 1324
 IMG_HEIGHT = 303
@@ -25,18 +28,22 @@ FONT_LOCATION = {
     'overpass-extrabold': 'static/fonts/overpass-extrabold.ttf',
 }
 
+WRAP_TEMPLATE = 'static/wraptemplate.png'
+
 ELEMENTS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/elements.json'
 ANCHORS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/anchors.json'
 
 
 class AniWrapService:
-    def get_font(self, type: str, font_size: int):
+    async def get_font(self, type: str, font_size: int):
         return ImageFont.truetype(FONT_LOCATION[type], font_size)
 
-    def center_anchor_point(self, available_space: int, element_width: int) -> int:
+    async def center_anchor_point(
+        self, available_space: int, element_width: int
+    ) -> int:
         return int(available_space * 0.5 - element_width * 0.5)
 
-    def render_text(
+    async def render_text(
         self,
         drawLayer: ImageDraw.ImageDraw,
         anchor_data: dict,
@@ -54,7 +61,7 @@ class AniWrapService:
         after = text_data.get('after', '')
 
         """Calculate the text Width and Height and save it in the data container"""
-        font = self.get_font(font_name, font_size)
+        font = await self.get_font(font_name, font_size)
         font_bbox = font.getbbox(text)
 
         text_data['width'] = int(font_bbox[2] - font_bbox[0])
@@ -73,11 +80,9 @@ class AniWrapService:
             text_data['y_pos'] = anchor_data[anchor]['y'] + y_offset
         else:
             text_data['x_pos'] = (
-                element_data[after]['x_pos']
-                + element_data[after]['width']
-                + anchor_data[anchor]['vertical_spacing']
+                element_data[after]['x_pos'] + element_data[after]['width'] + x_offset
             )
-            text_data['y_pos'] = element_data[after]['y_pos']
+            text_data['y_pos'] = element_data[after]['y_pos'] + y_offset
 
         drawLayer.text(
             (text_data['x_pos'], text_data['y_pos']),
@@ -89,7 +94,7 @@ class AniWrapService:
 
         return text_data
 
-    def render_text_right(
+    async def render_text_right(
         self,
         drawLayer: ImageDraw.ImageDraw,
         anchor_data: dict,
@@ -107,7 +112,7 @@ class AniWrapService:
         after = text_data.get('after', '')
 
         """Calculate the text Width and Height and save it in the data container"""
-        font = self.get_font(font_name, font_size)
+        font = await self.get_font(font_name, font_size)
         font_bbox = font.getbbox(text)
 
         text_data['width'] = int(font_bbox[2] - font_bbox[0])
@@ -134,7 +139,7 @@ class AniWrapService:
 
         return text_data
 
-    def apply_rounded_corners(
+    async def apply_rounded_corners(
         self, image: Image.Image, width: int, height: int, radius: int
     ) -> Image.Image:
         mask = Image.new('L', (width, height), 0)
@@ -149,7 +154,7 @@ class AniWrapService:
 
         return image
 
-    def render_image(
+    async def render_image(
         self,
         drawImage: Image.Image,
         url: str,
@@ -184,12 +189,12 @@ class AniWrapService:
         y_pos = int(anchor_data[anchor]['y'] + y_offset)
         image = image.resize((width, height), Image.Resampling.LANCZOS)
 
-        image = self.apply_rounded_corners(image, width, height, 8)
+        image = await self.apply_rounded_corners(image, width, height, 8)
         image.apply_transparency()
 
         drawImage.paste(image, (x_pos, y_pos), image)
 
-    def render_vertical_divider(
+    async def render_vertical_divider(
         self, drawLayer: ImageDraw.ImageDraw, anchor_data: dict, line_data: dict
     ) -> None:
         x_offset = line_data['x_offset']
@@ -208,7 +213,7 @@ class AniWrapService:
             width=width,
         )
 
-    def load_elements(self, user_data: UserData) -> dict:
+    async def load_elements(self, user_data: UserData) -> dict:
         """Insert data into the json for elements"""
         data = {}
 
@@ -228,7 +233,7 @@ class AniWrapService:
 
         return data
 
-    def load_anchor(self) -> dict:
+    async def load_anchor(self) -> dict:
         """Insert data into the json for anchors"""
         data = {}
 
@@ -246,28 +251,28 @@ class AniWrapService:
 
         return data
 
-    def generate(self, username: str) -> None:
-        print('Hello from miniwrapgen!')
+    async def generate(self, username: str) -> bool:
+        logger.info(f'Generating Wrap for {username}...')
 
         user_data = fetch_user_data(username)
 
         if user_data.error:
-            print(f'ERROR : \n{user_data.error_msg}')
-            return None
+            logger.error(f'ERROR : \n{user_data.error_msg}')
+            return False
 
-        element_data = self.load_elements(user_data)
-        anchor_data = self.load_anchor()
+        element_data = await self.load_elements(user_data)
+        anchor_data = await self.load_anchor()
 
-        img = Image.new('RGBA', (IMG_WIDTH, IMG_HEIGHT), color=COLORS['bg'])
+        COLORS['hl'] = user_data.profile_color
+
+        img = Image.open(WRAP_TEMPLATE, 'r')
 
         draw = ImageDraw.Draw(img)
 
-        self.render_text(draw, anchor_data, element_data, element_data['unofficial'])
-        self.render_text(draw, anchor_data, element_data, element_data['heading'])
+        await self.render_text(draw, anchor_data, element_data, element_data['heading'])
 
         # Anime Details
-        self.render_text(draw, anchor_data, element_data, element_data['anime'])
-        self.render_image(
+        await self.render_image(
             img,
             user_data.anime_img_url,
             anchor_data,
@@ -275,23 +280,28 @@ class AniWrapService:
             element_data['anime_img'],
         )
 
-        self.render_text(
+        await self.render_text(
             draw, anchor_data, element_data, element_data['anime_count_text']
         )
-        self.render_text(
+        await self.render_text(
             draw, anchor_data, element_data, element_data['anime_eps_text']
         )
-        self.render_text(
+        await self.render_text(
             draw, anchor_data, element_data, element_data['anime_mean_text']
         )
 
-        self.render_text(draw, anchor_data, element_data, element_data['anime_count'])
-        self.render_text(draw, anchor_data, element_data, element_data['anime_eps'])
-        self.render_text(draw, anchor_data, element_data, element_data['anime_mean'])
+        await self.render_text(
+            draw, anchor_data, element_data, element_data['anime_count']
+        )
+        await self.render_text(
+            draw, anchor_data, element_data, element_data['anime_eps']
+        )
+        await self.render_text(
+            draw, anchor_data, element_data, element_data['anime_mean']
+        )
 
         # Manga Details
-        self.render_text(draw, anchor_data, element_data, element_data['manga'])
-        self.render_image(
+        await self.render_image(
             img,
             user_data.manga_img_url,
             anchor_data,
@@ -299,35 +309,28 @@ class AniWrapService:
             element_data['manga_img'],
         )
 
-        element_data['manga_count'] = self.render_text_right(
+        element_data['manga_count'] = await self.render_text_right(
             draw, anchor_data, element_data, element_data['manga_count']
         )
-        element_data['manga_chaps'] = self.render_text_right(
+        element_data['manga_chaps'] = await self.render_text_right(
             draw, anchor_data, element_data, element_data['manga_chaps']
         )
-        element_data['manga_mean'] = self.render_text_right(
+        element_data['manga_mean'] = await self.render_text_right(
             draw, anchor_data, element_data, element_data['manga_mean']
         )
 
-        self.render_text_right(
+        await self.render_text_right(
             draw, anchor_data, element_data, element_data['manga_count_text']
         )
-        self.render_text_right(
+        await self.render_text_right(
             draw, anchor_data, element_data, element_data['manga_chaps_text']
         )
-        self.render_text_right(
+        await self.render_text_right(
             draw, anchor_data, element_data, element_data['manga_mean_text']
         )
 
-        self.render_text(
-            draw, anchor_data, element_data, element_data['anime_highest_rated_text']
-        )
-        self.render_text(
-            draw, anchor_data, element_data, element_data['manga_highest_rated_text']
-        )
-
-        self.render_vertical_divider(draw, anchor_data, element_data['divider'])
-
-        img = self.apply_rounded_corners(img, IMG_WIDTH, IMG_HEIGHT, 8)
+        img = await self.apply_rounded_corners(img, IMG_WIDTH, IMG_HEIGHT, 8)
 
         img.save(f'wraps/{username}.png')
+
+        return True

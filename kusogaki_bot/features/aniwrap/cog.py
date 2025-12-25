@@ -7,6 +7,7 @@ from discord.ext import commands
 
 from kusogaki_bot.core import BaseCog, KusogakiBot
 from kusogaki_bot.features.aniwrap.service import AniWrapService
+from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,6 @@ class AniWrapCog(BaseCog):
         self.bot = bot
         self.service = AniWrapService()
 
-    @app_commands.guilds(discord.Object(id=954353883977748512))
     @app_commands.command(
         name='alwrap',
         description='Generate alwrap',
@@ -28,25 +28,27 @@ class AniWrapCog(BaseCog):
         """Slash Command for generating AlWrap"""
         await interaction.response.defer()
 
-        generation_success = await self.service.generate(username)
-        wrap_file = discord.File(f'wraps/{username}.png')
+        response = await self.service.generate(username)
 
-        if generation_success:
-            await interaction.response.send_message(
-                f'{interaction.user.mention}', file=wrap_file
-            )
+        if response.success:
+            wrap_file = discord.File(f'wraps/{username}.png')
+            await interaction.response.send_message(file=wrap_file)
             logger.info(f'Wrap Generated for : {username}')
+
         else:
-            await interaction.response.send_message(
-                f'ERROR OCCURRED! {interaction.user.mention}'
+            error_embd, _ = await get_embed(
+                EmbedType.ERROR, 'ERROR!', response.error_msg
             )
+            await interaction.response.send_message(embed=error_embd)
             logger.error(f'ERROR OCCURRED while generating wrap for {username}')
 
         # Remove the saved wrap from storage
         os.remove(f'wraps/{username}.png')
 
     @commands.hybrid_command(
-        name='aniwrap', aliases=['miniwrap', 'wrap'], description='Generate MiniWrap'
+        name='aniwrap',
+        aliases=['miniwrap', 'wrap', 'alwrap'],
+        description='Generate MiniWrap',
     )
     async def aniwrap(
         self,
@@ -56,18 +58,21 @@ class AniWrapCog(BaseCog):
         """Text Command for generating AlWrap"""
         await ctx.typing()
 
-        generation_success = await self.service.generate(username)
-        wrap_file = discord.File(f'wraps/{username}.png')
+        response = await self.service.generate(username)
 
-        if generation_success:
+        if response.success:
+            wrap_file = discord.File(f'wraps/{username}.png')
+
             await ctx.channel.send(file=wrap_file)
             logger.info(f'Wrap Generated for : {username}')
-        else:
-            await ctx.channel.send('ERROR OCCURRED!')
-            logger.error(f'ERROR OCCURRED while generating wrap for {username}')
 
-        # Remove the saved wrap from storage
-        os.remove(f'wraps/{username}.png')
+            os.remove(f'wraps/{username}.png')
+        else:
+            error_embd, _ = await get_embed(
+                EmbedType.ERROR, 'ERROR!', response.error_msg
+            )
+            await ctx.channel.send(embed=error_embd)
+            logger.error(f'ERROR OCCURRED while generating wrap for {username}')
 
 
 async def setup(bot: commands.Bot):

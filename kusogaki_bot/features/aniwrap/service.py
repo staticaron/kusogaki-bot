@@ -28,13 +28,34 @@ FONT_LOCATION = {
     'overpass-extrabold': 'static/fonts/overpass-extrabold.ttf',
 }
 
-WRAP_TEMPLATE = 'static/wraptemplate.png'
+WRAP_TEMPLATE = 'static/miniwraptemplate.png'
 
 ELEMENTS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/elements.json'
 ANCHORS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/anchors.json'
 
 
+class GenerationResponse:
+    def __init__(self, success: bool = True, error_msg: str = ''):
+        self.success = success
+        self.error_msg = error_msg
+
+
 class AniWrapService:
+    def __init__(self):
+        self.load_data_into_templates()
+        logger.info('Elements and Anchors Data Loaded!')
+
+    def load_data_into_templates(self):
+        """Read the elements.json and anchors.json files and creates Templates"""
+
+        with open(ELEMENTS_FILE_LOCATION, 'r') as element_fin:
+            element_data_raw = element_fin.read()
+            self.element_template = Template(element_data_raw)
+
+        with open(ANCHORS_FILE_LOCATION, 'r') as anchors_fin:
+            anchor_data_raw = anchors_fin.read()
+            self.anchor_template = Template(anchor_data_raw)
+
     async def get_font(self, type: str, font_size: int):
         return ImageFont.truetype(FONT_LOCATION[type], font_size)
 
@@ -215,53 +236,43 @@ class AniWrapService:
 
     async def load_elements(self, user_data: UserData) -> dict:
         """Insert data into the json for elements"""
-        data = {}
 
-        with open(ELEMENTS_FILE_LOCATION, 'r') as file_in:
-            raw_data = file_in.read()
-            template = Template(raw_data)
-            raw_data = template.substitute(
-                anime_count=user_data.anime_count,
-                anime_eps=user_data.anime_eps,
-                anime_mean=str(round(user_data.anime_mean_score, 1)) + '%',
-                manga_count=user_data.manga_count,
-                manga_chaps=user_data.manga_chaps,
-                manga_mean=str(round(user_data.manga_mean_score, 1)) + '%',
-            )
+        raw_data = self.element_template.substitute(
+            anime_count=user_data.anime_count,
+            anime_eps=user_data.anime_eps,
+            anime_mean=str(round(user_data.anime_mean_score, 1)) + '%',
+            manga_count=user_data.manga_count,
+            manga_chaps=user_data.manga_chaps,
+            manga_mean=str(round(user_data.manga_mean_score, 1)) + '%',
+        )
 
-            data = json.loads(raw_data)
-
+        data = json.loads(raw_data)
         return data
 
-    async def load_anchor(self) -> dict:
+    async def load_anchors(self) -> dict:
         """Insert data into the json for anchors"""
-        data = {}
 
-        with open(ANCHORS_FILE_LOCATION, 'r') as file_in:
-            raw_data = file_in.read()
-            template = Template(raw_data)
-            raw_data = template.substitute(
-                width=IMG_WIDTH,
-                height=IMG_HEIGHT,
-                halfwidth=IMG_WIDTH * 0.5,
-                halfheight=IMG_HEIGHT * 0.5,
-            )
+        raw_data = self.anchor_template.substitute(
+            width=IMG_WIDTH,
+            height=IMG_HEIGHT,
+            halfwidth=IMG_WIDTH * 0.5,
+            halfheight=IMG_HEIGHT * 0.5,
+        )
 
-            data = json.loads(raw_data)
-
+        data = json.loads(raw_data)
         return data
 
-    async def generate(self, username: str) -> bool:
+    async def generate(self, username: str) -> GenerationResponse:
         logger.info(f'Generating Wrap for {username}...')
 
         user_data = fetch_user_data(username)
 
         if user_data.error:
             logger.error(f'ERROR : \n{user_data.error_msg}')
-            return False
+            return GenerationResponse(False, user_data.error_msg)
 
         element_data = await self.load_elements(user_data)
-        anchor_data = await self.load_anchor()
+        anchor_data = await self.load_anchors()
 
         COLORS['hl'] = user_data.profile_color
 
@@ -333,4 +344,4 @@ class AniWrapService:
 
         img.save(f'wraps/{username}.png')
 
-        return True
+        return GenerationResponse()

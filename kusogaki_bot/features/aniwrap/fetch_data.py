@@ -22,6 +22,7 @@ class UserData:
     manga_mean_score: float = 0.0
     manga_img_url: str = ''
     profile_color: str = '#D777CA'
+    banner_url: str = ''
 
 
 def get_user_id_from_username(username: str) -> str:
@@ -93,5 +94,6 @@ def fetch_user_data(username: str) -> UserData:
     user_data.manga_img_url = data['TopManga'][0]['ImageUrl']
 
     user_data.profile_color = data['TextColor']
+    user_data.banner_url = data['BannerImageUrl']
 
     return user_data

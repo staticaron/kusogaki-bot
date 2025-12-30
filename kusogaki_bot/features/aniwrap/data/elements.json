@@ -1,4 +1,12 @@
 {
+	"unofficial" : {
+		"text" : "UNOFFICIAL",
+		"anchor" : "main_anchor",
+		"x_offset" : null,
+		"y_offset" : 5,
+		"size" : 80,
+		"font" : "overpass-extrabold"
+	},
 	"heading" : {	
 		"text" : "ANILIST WRAPPED 2025",
 		"anchor" : "main_anchor",
@@ -6,6 +14,29 @@
 		"y_offset" : 25,
 		"size" : 40,
 		"color" : "hl",
+		"font" : "overpass-extrabold"
+	},
+	"divider" : {
+		"anchor" : "main_anchor",
+		"x_offset" : 0,
+		"y_offset" : 100,
+		"len" : 160,
+		"width" : 6
+	},
+	"anime" : {
+		"text" : "ANIME",
+		"anchor" : "anime_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : -52,
+		"size" : 40,
+		"font" : "overpass-extrabold"
+	},
+	"manga" : {	
+		"text" : "MANGA",
+		"anchor" : "manga_details_anchor",
+		"x_offset" : 0,
+		"y_offset" : -52,
+		"size" : 40,
 		"font" : "overpass-extrabold"
 	},
 	"anime_img" : {
@@ -30,7 +61,6 @@
 		"size" : 35,
 		"color" : "hl",
 		"font" : "overpass-extrabold"
-
 	},
 	"anime_count" : {	
 		"text" : "$anime_count",
@@ -41,7 +71,6 @@
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
-
 	},
 	"anime_eps_text" : {	
 		"text" : "EPISODES: ",
@@ -51,7 +80,6 @@
 		"size" : 35,
 		"color" : "hl",
 		"font" : "overpass-extrabold"
-
 	},
 	"anime_eps" : {	
 		"text" : "$anime_eps",
@@ -62,7 +90,6 @@
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
-
 	},
 	"anime_mean_text" : {	
 		"text" : "MEAN SCORE: ",
@@ -72,7 +99,6 @@
 		"size" : 35,
 		"color" : "hl",
 		"font" : "overpass-extrabold"
-
 	},
 	"anime_mean" : {	
 		"text" : "$anime_mean",
@@ -83,7 +109,6 @@
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
-
 	},
 	"manga_count_text" : {	
 		"after" : "manga_count",
@@ -94,7 +119,6 @@
 		"size" : 35,
 		"color" : "hl",
 		"font" : "overpass-extrabold"
-
 	},
 	"manga_count" : {	
 		"after" : "",
@@ -105,7 +129,6 @@
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
-
 	},
 	"manga_chaps_text" : {	
 		"after" : "manga_chaps",
@@ -116,7 +139,6 @@
 		"size" : 35,
 		"color" : "hl",
 		"font" : "overpass-extrabold"
-
 	},
 	"manga_chaps" : {	
 		"after" : "",
@@ -127,7 +149,6 @@
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
-
 	},
 	"manga_mean_text" : {	
 		"after" : "manga_mean",
@@ -138,7 +159,6 @@
 		"size" : 35,
 		"color" : "hl",
 		"font" : "overpass-extrabold"
-
 	},
 	"manga_mean" : {	
 		"after" : "",
@@ -149,6 +169,29 @@
 		"size" : 35,
 		"color" : "fg",
 		"font" : "overpass-extrabold"
-
+	},
+	"anime_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "anime_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"font" : "overpass-semibold"
+	},
+	"manga_highest_rated_text" : {
+		"text" : "Highest Rated",
+		"anchor" : "manga_image_anchor",
+		"x_offset" : null,
+		"y_offset" : 237,
+		"size" : 20,
+		"font" : "overpass-semibold"
+	},
+	"website" : {
+		"text" : "kusogaki.co/alwrap",
+		"anchor" : "main_anchor",
+		"x_offset" : null,
+		"y_offset" : 270,
+		"size" : 20,
+		"font" : "overpass-semibold"
 	}
 }

@@ -55,13 +55,14 @@ class KusogakiBot(commands.AutoShardedBot):
 
             try:
                 cog_path = f'kusogaki_bot.features.{feature_dir.name}.cog'
+
+                if cog_path == "kusogaki_bot.features.guess_the_anime.cog":
+                    continue
+
                 await self.load_extension(cog_path)
                 logger.info(f'Loaded feature: {feature_dir.name} ({cog_path})')
             except Exception as e:
                 logger.error(f'Failed to load feature {feature_dir.name}: {str(e)}')
-
-        # INFO: Removed GTA cog for causing errors with image preloading
-        await self.unload_extension('kusogaki_bot.features.guess_the_anime.cog')
 
     async def setup_hook(self) -> None:
         """

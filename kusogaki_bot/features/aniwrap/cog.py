@@ -46,11 +46,7 @@ class AniWrapCog(BaseCog):
         # Remove the saved wrap from storage
         os.remove(f'wraps/{username}.png')
 
-    @commands.hybrid_command(
-        name='aniwrap',
-        aliases=['miniwrap', 'wrap', 'alwrap'],
-        description='Generate MiniWrap',
-    )
+    @commands.hybrid_command(name='aniwrap', aliases=['miniwrap', 'wrap', 'alwrap'], description='Generate MiniWrap')
     async def aniwrap(
         self,
         ctx: commands.Context,
@@ -60,6 +56,26 @@ class AniWrapCog(BaseCog):
         await ctx.typing()
 
         response = await self.service.generate(username)
+
+        if response.success:
+            wrap_file = discord.File(f'wraps/{username}.png')
+
+            await ctx.channel.send(file=wrap_file)
+            logger.info(f'Wrap Generated for : {username}')
+
+            os.remove(f'wraps/{username}.png')
+        else:
+            error_embd, _ = await get_embed(
+                EmbedType.ERROR, 'ERROR!', response.error_msg
+            )
+            await ctx.channel.send(embed=error_embd)
+            logger.error(f'ERROR OCCURRED while generating wrap for {username}')
+
+    @commands.hybrid_command(name="dummywrap", aliases=["dw"], description="Generate a dummy wrap without making API calls to kusogaki")
+    async def send_dummy_wrap(self, ctx: commands.Context, username: str):
+        await ctx.typing()
+
+        response = await self.service.generate(username, True)
 
         if response.success:
             wrap_file = discord.File(f'wraps/{username}.png')

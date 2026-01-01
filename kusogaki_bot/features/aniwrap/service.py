@@ -8,7 +8,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 
 import kusogaki_bot.shared.utils.colors as colors
-from kusogaki_bot.features.aniwrap.fetch_data import UserData, fetch_user_data
+from kusogaki_bot.features.aniwrap.fetch_data import UserData, fetch_demo_user_data, fetch_user_data
 
 logger = logging.getLogger(__name__)
 
@@ -276,10 +276,19 @@ class AniWrapService:
         data = json.loads(raw_data)
         return data
 
-    async def generate(self, username: str) -> GenerationResponse:
-        logger.info(f'Generating Wrap for {username}...')
+    async def dampen_color(self, color:tuple) -> str:
+        """ Dampen the color ( ik very useful comment ) """
 
-        user_data = fetch_user_data(username)
+        r, g, b = [ int( x * 0.6 ) for x in color ]
+        return f'#{r:02x}{g:02x}{b:02x}'
+
+    async def generate(self, username: str, demo:bool = False) -> GenerationResponse:
+        logger.info(f'Generating Demo Wrap for {username}...')
+
+        if demo:
+            user_data = fetch_demo_user_data(username)
+        else:
+            user_data = fetch_user_data(username)
 
         if user_data.error:
             print(f'ERROR : \n{user_data.error_msg}')
@@ -291,14 +300,13 @@ class AniWrapService:
         image_response = requests.get(user_data.banner_url)
         banner = Image.open(BytesIO(image_response.content))
 
-        primary_color, box_color, text_color_from_image, label_color_from_image = (
-            colors.get_image_colors(banner)
-        )
+        primary_color, box_color, text_color_from_image, label_color_from_image = colors.get_image_colors(banner)
 
         primary_color_hex = await self.rgb_to_hex(primary_color)
         box_color_hex = await self.rgb_to_hex(box_color)
         label_color_hex = await self.rgb_to_hex(label_color_from_image)
         text_color_hex = await self.rgb_to_hex(text_color_from_image)
+        dampened_text_color = await self.dampen_color(text_color_from_image)
 
         bg = colors.apply_color_overlay(WRAP_BACKGROUND, primary_color)
 
@@ -316,8 +324,7 @@ class AniWrapService:
 
         # Anime Details
         await self.render_text(
-            draw, anchor_data, element_data, element_data['anime'], text_color_hex
-        )
+            draw, anchor_data, element_data, element_data['anime'], dampened_text_color)
         await self.render_image(
             bg, user_data.anime_img_url, anchor_data, element_data, element_data['anime_img']
         )
@@ -357,7 +364,7 @@ class AniWrapService:
 
         # Manga Details
         await self.render_text_right(
-            draw, anchor_data, element_data, element_data['manga'], box_color_hex
+            draw, anchor_data, element_data, element_data['manga'], text_color_hex
         )
         await self.render_image(
             bg, user_data.manga_img_url, anchor_data, element_data, element_data['manga_img']

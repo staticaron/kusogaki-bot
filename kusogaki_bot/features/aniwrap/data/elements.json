@@ -19,23 +19,23 @@
 	"divider" : {
 		"anchor" : "main_anchor",
 		"x_offset" : 0,
-		"y_offset" : 100,
-		"len" : 160,
+		"y_offset" : 135,
+		"len" : 135,
 		"width" : 6
 	},
 	"anime" : {
 		"text" : "ANIME",
 		"anchor" : "anime_details_anchor",
 		"x_offset" : 0,
-		"y_offset" : -52,
+		"y_offset" : -57,
 		"size" : 40,
 		"font" : "overpass-extrabold"
 	},
 	"manga" : {	
 		"text" : "MANGA",
 		"anchor" : "manga_details_anchor",
-		"x_offset" : 0,
-		"y_offset" : -52,
+		"x_offset" : 5,
+		"y_offset" : -57,
 		"size" : 40,
 		"font" : "overpass-extrabold"
 	},
@@ -190,7 +190,7 @@
 		"text" : "kusogaki.co/alwrap",
 		"anchor" : "main_anchor",
 		"x_offset" : null,
-		"y_offset" : 270,
+		"y_offset" : 90,
 		"size" : 20,
 		"font" : "overpass-semibold"
 	}

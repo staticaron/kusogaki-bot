@@ -6,13 +6,13 @@
 	},	
 	"anime_details_anchor" : {
 		"x" : 220,
-		"y" : 120,
+		"y" : 130,
 		"vertical_spacing" : 40,
 		"horizontal_spacing" : 40
 	},
 	"manga_details_anchor" : {
 		"x" : 1110,
-		"y" : 120,
+		"y" : 130,
 		"vertical_spacing" : 40,
 		"horizontal_spacing" : 40
 	},

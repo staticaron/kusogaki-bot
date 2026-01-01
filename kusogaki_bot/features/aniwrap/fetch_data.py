@@ -1,6 +1,7 @@
 import logging
 import pdb
 
+from discord import User
 import requests
 
 import config
@@ -95,5 +96,24 @@ def fetch_user_data(username: str) -> UserData:
 
     user_data.profile_color = data['TextColor']
     user_data.banner_url = data['BannerImageUrl']
+
+    return user_data
+
+def fetch_demo_user_data( username: str ) -> UserData:
+
+    user_data = UserData()
+
+    user_data.name = username
+    user_data.anime_count = 98
+    user_data.anime_eps = 1020
+    user_data.anime_mean_score = 78.69849598
+    user_data.anime_img_url = "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx194884-rHgGAzKSCEWz.jpg"
+    user_data.manga_count = 29
+    user_data.manga_chaps = 345
+    user_data.manga_mean_score = 85.845940
+    user_data.manga_img_url = "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx188781-Dg2ZgRhzIZ8X.jpg"
+
+    user_data.profile_color = "#3399FF" 
+    user_data.banner_url = "https://s4.anilist.co/file/anilistcdn/user/banner/b5864288-tVoidJhllJva.jpg"
 
     return user_data

@@ -298,6 +298,9 @@ def apply_color_overlay(base_path, color_rgb) -> Image.Image:
     overlay.putalpha(base.split()[3])
     return overlay
 
+def apply_color_overlap_image( width, height, color_rgb ) -> Image.Image:
+    overlay = Image.new("RGBA", [width, height], color_rgb + (255,))
+    return overlay
 
 """
 def create_wrapped_image(banner_path, pfp_path, output_path):

@@ -1,7 +1,6 @@
 import logging
 import pdb
 
-from discord import User
 import requests
 
 import config
@@ -14,13 +13,13 @@ class UserData:
     error: bool = False
     error_msg: str = ''
     name: str = ''
-    anime_count: int = 0
-    anime_eps: int = 0
-    anime_mean_score: float = 0.0
+    anime_count: str = "0"
+    anime_eps: str = "0"
+    anime_mean_score: str = "-"
     anime_img_url: str = ''
-    manga_count: int = 0
-    manga_chaps: int = 0
-    manga_mean_score: float = 0.0
+    manga_count: str = "0"
+    manga_chaps: str = "0"
+    manga_mean_score: str = "-"
     manga_img_url: str = ''
     profile_color: str = '#D777CA'
     banner_url: str = ''
@@ -38,8 +37,12 @@ def get_user_id_from_username(username: str) -> str:
         logger.error(f'ERROR while getting userid from username ( anilist ) \n{e}')
         return ''
 
-    return response.get('data', {}).get('User', {}).get('id', '234345')
+    data = response.get('data', {}).get('User', None)
+    if data is None:
+        return ""
 
+    return data.get('id', '')
+    
 
 def fetch_user_data(username: str) -> UserData:
     """Fetch user from kusogaki api using username"""
@@ -55,7 +58,7 @@ def fetch_user_data(username: str) -> UserData:
         return user_data
 
     url = f'https://kusogaki.co/api/alwrap/statistics/{user_id}'
-    params = {'wrapYear': 2024}
+    params = {'wrapYear': 2025}
     headers = {'Authorization': f'Bearer {config.KUSOGAKI_TOKEN}'}
 
     data = {}
@@ -65,7 +68,7 @@ def fetch_user_data(username: str) -> UserData:
 
         if response.status_code == 204:
             user_data.error = True
-            user_data.error_msg = '204'
+            user_data.error_msg = '204 No Content | Wrap is not available!'
             return user_data
 
         response.raise_for_status()
@@ -86,13 +89,15 @@ def fetch_user_data(username: str) -> UserData:
     user_data.name = data['Username']
     user_data.anime_count = data['AnimeCompleted']
     user_data.anime_eps = data['EpisodesWatched']
-    user_data.anime_mean_score = data['AnimeMeanScore']
-    user_data.anime_img_url = data['TopAnime'][0]['ImageUrl']
+    anime_mean_score = str(round( data['AnimeMeanScore'], 1)) + '%' if data['AnimeMeanScore'] is not None else "-"
+    user_data.anime_mean_score = anime_mean_score
+    user_data.anime_img_url = data.get('TopAnime', "")[0].get('ImageUrl', "")
 
     user_data.manga_count = data['MangaCompleted']
     user_data.manga_chaps = data['ChaptersRead']
-    user_data.manga_mean_score = data['MangaMeanScore']
-    user_data.manga_img_url = data['TopManga'][0]['ImageUrl']
+    manga_mean_score = str(round( data['MangaMeanScore'], 1)) + '%' if data['MangaMeanScore'] is not None else "-"
+    user_data.manga_mean_score = manga_mean_score
+    user_data.manga_img_url = data.get('TopManga', "")[0].get('ImageUrl', "")
 
     user_data.profile_color = data['TextColor']
     user_data.banner_url = data['BannerImageUrl']
@@ -104,13 +109,13 @@ def fetch_demo_user_data( username: str ) -> UserData:
     user_data = UserData()
 
     user_data.name = username
-    user_data.anime_count = 98
-    user_data.anime_eps = 1020
-    user_data.anime_mean_score = 78.69849598
-    user_data.anime_img_url = "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx194884-rHgGAzKSCEWz.jpg"
-    user_data.manga_count = 29
-    user_data.manga_chaps = 345
-    user_data.manga_mean_score = 85.845940
+    user_data.anime_count = "98"
+    user_data.anime_eps = "1020"
+    user_data.anime_mean_score = "78.69849598"
+    user_data.anime_img_url = ""
+    user_data.manga_count = "29"
+    user_data.manga_chaps = "345"
+    user_data.manga_mean_score = "85.845940"
     user_data.manga_img_url = "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx188781-Dg2ZgRhzIZ8X.jpg"
 
     user_data.profile_color = "#3399FF" 

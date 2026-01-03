@@ -54,7 +54,6 @@ class GenerationResponse:
 class AniWrapService:
     def __init__(self):
         self.load_data_into_templates()
-        logger.info('Elements and Anchors Data Loaded!')
 
         self.no_data_img = Image.open(NO_DATA_IMG)
         self.background_img = Image.open(WRAP_BACKGROUND)
@@ -323,7 +322,6 @@ class AniWrapService:
             user_data = await fetch_user_data(username)
 
         if user_data.error:
-            print(f'ERROR : \n{user_data.error_msg}')
             return GenerationResponse(False, user_data.error_msg)
 
         element_data = await self.load_elements(user_data)
@@ -344,7 +342,7 @@ class AniWrapService:
                 box_color_raw,
                 self.text_color_from_image,
                 self.label_color_from_image,
-            ) = colors.get_image_colors(banner)
+            ) = await colors.get_image_colors(banner)
 
         elif user_data.profile_pic_url != '':
             image_response = requests.get(user_data.profile_pic_url)
@@ -354,7 +352,7 @@ class AniWrapService:
                 box_color_raw,
                 self.text_color_from_image,
                 self.label_color_from_image,
-            ) = colors.get_image_colors(banner)
+            ) = await colors.get_image_colors(banner)
 
         self.label_color_hex = await self.rgb_to_hex(self.label_color_from_image)
         self.text_color_hex = await self.rgb_to_hex(self.text_color_from_image)

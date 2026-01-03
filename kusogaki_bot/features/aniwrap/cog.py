@@ -24,31 +24,6 @@ class AniWrapCog(BaseCog):
         self.bot = bot
         self.service = AniWrapService()
 
-    @app_commands.command(
-        name='alwrap',
-        description='Generate alwrap',
-    )
-    async def alwrap_slash(self, interaction: discord.Interaction, username: str):
-        """Slash Command for generating AlWrap"""
-        await interaction.response.defer()
-
-        response = await self.service.generate(username)
-
-        if response.success:
-            wrap_file = discord.File(f'wraps/{username}.png')
-            await interaction.response.send_message(file=wrap_file)
-            logger.info(f'Wrap Generated for : {username}')
-
-        else:
-            error_embd, _ = await get_embed(
-                EmbedType.ERROR, 'ERROR!', response.error_msg
-            )
-            await interaction.response.send_message(embed=error_embd)
-            logger.error(f'ERROR OCCURRED while generating wrap for {username}')
-
-        # Remove the saved wrap from storage
-        os.remove(f'wraps/{username}.png')
-
     @commands.hybrid_command(
         name='aniwrap',
         aliases=['miniwrap', 'wrap', 'alwrap'],
@@ -62,10 +37,6 @@ class AniWrapCog(BaseCog):
         """Text Command for generating AlWrap"""
         await ctx.typing()
 
-        tracer = VizTracer(output_file='wrap_profile_data.json')
-        tracer.start()
-
-        t0 = time.time()
         response = await self.service.generate(username)
 
         if response.success:
@@ -79,15 +50,6 @@ class AniWrapCog(BaseCog):
             )
             await ctx.channel.send(embed=error_embd)
             logger.error(f'ERROR OCCURRED while generating wrap for {username}')
-
-        t1 = time.time()
-
-        delta = t1 - t0
-
-        logger.info(delta)
-
-        tracer.stop()
-        tracer.save()
 
     @commands.hybrid_command(
         name='dummywrap',

@@ -38,8 +38,7 @@ async def get_user_id_from_username(username: str) -> str:
             ) as response:
                 response_json = await response.json()
 
-    except Exception as e:
-        logger.error(f'ERROR while getting userid from username ( anilist ) \n{e}')
+    except Exception:
         return ''
 
     data = response_json.get('data', {}).get('User', None)
@@ -59,7 +58,6 @@ async def fetch_user_data(username: str) -> UserData:
     if user_id == '':
         user_data.error = True
         user_data.error_msg = 'Failed to get UserID from username!'
-        logger.error(user_data.error_msg)
         return user_data
 
     url = f'https://kusogaki.co/api/alwrap/statistics/{user_id}'
@@ -116,13 +114,11 @@ async def fetch_user_data(username: str) -> UserData:
                 return user_data
 
     except aiohttp.ClientResponseError as http_err:
-        logger.error(f'HTTP error occurred: {http_err}')
         user_data.error = True
         user_data.error_msg = f'HTTP error occurred: {http_err}'
         return user_data
 
     except Exception as err:
-        logger.error(f'Error occurred: {err}')
         user_data.error = True
         user_data.error_msg = f'Error occurred: {err}'
         return user_data

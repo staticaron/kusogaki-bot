@@ -8,22 +8,30 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def _rgb_to_lab(rgb_u8: np.ndarray) -> np.ndarray:
-    lab = cv2.cvtColor(rgb_u8.reshape(-1, 1, 3), cv2.COLOR_RGB2Lab).reshape(-1, 3).astype(np.float32)
+    lab = (
+        cv2.cvtColor(rgb_u8.reshape(-1, 1, 3), cv2.COLOR_RGB2Lab)
+        .reshape(-1, 3)
+        .astype(np.float32)
+    )
     return lab
+
 
 def _lab_to_rgb(lab_f32: np.ndarray) -> np.ndarray:
     lab_u8 = np.clip(lab_f32, 0, 255).astype(np.uint8)
     rgb = cv2.cvtColor(lab_u8.reshape(-1, 1, 3), cv2.COLOR_Lab2RGB).reshape(-1, 3)
     return rgb
 
+
 def _lab_to_lch(lab: np.ndarray) -> np.ndarray:
     l = lab[:, 0]
     a = lab[:, 1] - 128.0  # OpenCV a,b is offset by 128
     b = lab[:, 2] - 128.0
-    c = np.sqrt(a*a + b*b)
+    c = np.sqrt(a * a + b * b)
     h = np.degrees(np.arctan2(b, a)) % 360.0
     return np.stack([l, c, h], axis=1).astype(np.float32)
+
 
 def _lch_to_lab(lch: np.ndarray) -> np.ndarray:
     l, c, h = lch[:, 0], lch[:, 1], np.radians(lch[:, 2])
@@ -40,18 +48,20 @@ def _is_skin_lab(lab: np.ndarray) -> np.ndarray:
     cr, cb = ycrcb[:, 1], ycrcb[:, 2]
     return (cr >= 135) & (cr <= 180) & (cb >= 85) & (cb <= 135)
 
+
 def _lch_contrast_ratio(lch1, lch2) -> float:
     if lch1[:, 0] > lch2[0, 0]:
         luma_max, luma_min = lch1[0, 0], lch2[0, 0]
     else:
         luma_max, luma_min = lch2[0, 0], lch1[0, 0]
-    ratio = (luma_max/255 + 0.05) / (luma_min/255 + 0.05)
+    ratio = (luma_max / 255 + 0.05) / (luma_min / 255 + 0.05)
     return ratio
+
 
 def _lch_from_contrast(desired_ratio, lch1) -> np.ndarray:
     # Returns an LCH color with a brighter luma than lch1 to match desired contrast ratio
     luma_low = lch1[0, 0]
-    luma_high = (desired_ratio * (luma_low/255 + 0.05) - 0.05)*255
+    luma_high = (desired_ratio * (luma_low / 255 + 0.05) - 0.05) * 255
     lch2 = lch1.copy()
     lch2[0, 0] = luma_high
     return lch2
@@ -61,9 +71,9 @@ def _read_image(source: str | Image.Image) -> np.ndarray:
     if isinstance(source, str):
         img = cv2.imread(source, cv2.IMREAD_UNCHANGED)
         if img is None:
-            raise FileNotFoundError(f"Image not found: {source}")
+            raise FileNotFoundError(f'Image not found: {source}')
     else:
-        pil_img = source.convert("RGBA")
+        pil_img = source.convert('RGBA')
         img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGBA2BGRA)
 
     h, w = img.shape[:2]
@@ -99,12 +109,12 @@ def _choose_k_dynamic(img_rgb_uint8: np.ndarray, k_min=3, k_max=10) -> int:
     sample_lab = _rgb_to_lab(sample_rgb)
 
     def evaluate_k(k: int):
-        km = MiniBatchKMeans(n_clusters=k, random_state=42, n_init="auto")
+        km = MiniBatchKMeans(n_clusters=k, random_state=42, n_init='auto')
         labels = km.fit_predict(sample_lab)
         try:
             sil = silhouette_score(sample_lab, labels, metric='euclidean')
         except Exception as e:  # Divide by 0, overflow, etc
-            logger.debug(f"Failed to compute silhouette_score: {e}")
+            logger.debug(f'Failed to compute silhouette_score: {e}')
             sil = -1.0
 
         counts = np.bincount(labels, minlength=k).astype(np.float32)
@@ -112,10 +122,12 @@ def _choose_k_dynamic(img_rgb_uint8: np.ndarray, k_min=3, k_max=10) -> int:
         small_fraction = float((weights < 0.01).mean())
         cluster_variance = float(weights.max() - weights.min())
         score = sil - 0.20 * small_fraction - 0.10 * cluster_variance
-        logger.debug(f"k={k}: score {score}")
+        logger.debug(f'k={k}: score {score}')
         return k, score, small_fraction
 
-    results = Parallel(n_jobs=-1, prefer="threads")(delayed(evaluate_k)(k) for k in range(k_min, k_max + 1))
+    results = Parallel(n_jobs=-1, prefer='threads')(
+        delayed(evaluate_k)(k) for k in range(k_min, k_max + 1)
+    )
     best_score = max(r[1] for r in results)
     tol = 0.02
     near = [r for r in results if (best_score - r[1]) <= tol]
@@ -136,7 +148,9 @@ def _get_text_color(box_color_lch, img_centers_lch, img_weights) -> np.ndarray:
     chroma = img_centers_lch[:, 1].astype(np.float32)
     weighted_avg_chroma = np.sum(chroma * img_weights)
     if weighted_avg_chroma < 0.1:
-        logger.debug(f"Weighted average chroma = {weighted_avg_chroma}, image is monochrome")
+        logger.debug(
+            f'Weighted average chroma = {weighted_avg_chroma}, image is monochrome'
+        )
         initial_chroma = 10
 
     # Weight clusters based on saturation so neutral clusters do not influence text color as much
@@ -144,7 +158,9 @@ def _get_text_color(box_color_lch, img_centers_lch, img_weights) -> np.ndarray:
     weights = img_weights * neutral_mult
 
     best = 0
-    best_color = np.array([[initial_luma, initial_chroma, candidates_h[0]]], dtype=np.float32)
+    best_color = np.array(
+        [[initial_luma, initial_chroma, candidates_h[0]]], dtype=np.float32
+    )
 
     # Select most pallatte-matching analagous hue
     for h in candidates_h:
@@ -154,8 +170,8 @@ def _get_text_color(box_color_lch, img_centers_lch, img_weights) -> np.ndarray:
         centers_h = img_centers_lch[:, 2]
         angular_diff = np.abs(((text_h - centers_h + 180) % 360) - 180)
 
-        score = np.sum((1 - angular_diff/180) * weights)
-        logger.debug(f"Text candidates h = {h} similarity score = {score}")
+        score = np.sum((1 - angular_diff / 180) * weights)
+        logger.debug(f'Text candidates h = {h} similarity score = {score}')
         if score > best:
             best = score
             best_color = lch_test
@@ -176,22 +192,22 @@ def _get_text_color(box_color_lch, img_centers_lch, img_weights) -> np.ndarray:
             lo = test_l
 
     if ratio < target_contrast_ratio:
-        logger.debug(f"{ratio} < {target_contrast_ratio}, using white")
+        logger.debug(f'{ratio} < {target_contrast_ratio}, using white')
         return np.array([[255, 255, 255]], dtype=np.float32)
 
     return _lab_to_rgb(_lch_to_lab(best_color))
 
 
-def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
-    logger.info(f"Extracting colors from image")
+async def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
+    logger.info(f'Extracting colors from image')
     rgb = _read_image(source)
     lab = _rgb_to_lab(rgb)
 
     k = _choose_k_dynamic(rgb)
     # k = 6
-    source_name = source if isinstance(source, str) else "image"
-    logger.debug(f"{source_name} chose k={k} clusters")
-    kmeans = MiniBatchKMeans(n_clusters=k, random_state=42, n_init="auto").fit(lab)
+    source_name = source if isinstance(source, str) else 'image'
+    logger.debug(f'{source_name} chose k={k} clusters')
+    kmeans = MiniBatchKMeans(n_clusters=k, random_state=42, n_init='auto').fit(lab)
 
     centers_lab = kmeans.cluster_centers_.astype(np.float32)
     labels = kmeans.labels_
@@ -203,9 +219,9 @@ def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
     weights = counts / counts.sum()
 
     lch_centers = _lab_to_lch(centers_lab)
-    skin_mask   = _is_skin_lab(centers_lab)
+    skin_mask = _is_skin_lab(centers_lab)
 
-    neutral_chroma_threshold   = 8.0
+    neutral_chroma_threshold = 8.0
     neutral_dominant_threshold = 0.45
     skin_dominant_threshold = 0.25
 
@@ -225,23 +241,29 @@ def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
             continue
         is_skin = bool(skin_mask[i])
         if (not is_skin) or (is_skin and weights[i] >= skin_dominant_threshold):
-            if lch_centers[i][0] - target_primary_l > bad_luma_delta and bad_luma_threshold > weights[i]:
+            if (
+                lch_centers[i][0] - target_primary_l > bad_luma_delta
+                and bad_luma_threshold > weights[i]
+            ):
                 continue
             primary_idx = i
             break
     # Remove skin check
     if primary_idx is None:
-        logger.debug(f"{source_name} Failed skin check")
+        logger.debug(f'{source_name} Failed skin check')
         for i in range(k):
             if bool(neutral_mask[i]):
                 continue
-            if lch_centers[i][0] - target_primary_l > bad_luma_delta and bad_luma_threshold > weights[i]:
+            if (
+                lch_centers[i][0] - target_primary_l > bad_luma_delta
+                and bad_luma_threshold > weights[i]
+            ):
                 continue
             primary_idx = i
             break
     # Remove luma check
     if primary_idx is None:
-        logger.debug(f"{source_name} Failed luma check")
+        logger.debug(f'{source_name} Failed luma check')
         for i in range(k):
             if bool(neutral_mask[i]):
                 continue
@@ -249,14 +271,14 @@ def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
             break
     # Remove strict neutral check
     if primary_idx is None:
-        logger.debug(f"{source_name} Failed strict neutral check")
+        logger.debug(f'{source_name} Failed strict neutral check')
         for i in range(k):
             if bool(neutral_mask[i]) and weights[i] >= neutral_dominant_threshold:
                 primary_idx = i
                 break
     # Remove all checks (backup)
     if primary_idx is None:
-        logger.debug(f"{source_name} Failed all checks")
+        logger.debug(f'{source_name} Failed all checks')
         primary_idx = int(np.argmax(weights))
 
     primary_lch = lch_centers[[primary_idx]]
@@ -264,7 +286,9 @@ def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
     # Luminance and chroma adjustment
     chroma_cap = float(max(np.percentile(chroma, 85), 12.0))
 
-    def adjust_l_and_cap_c(lch: np.ndarray, target_l: float, alpha_l: float, c_cap: float) -> np.ndarray:
+    def adjust_l_and_cap_c(
+        lch: np.ndarray, target_l: float, alpha_l: float, c_cap: float
+    ) -> np.ndarray:
         out = lch.copy()
         out[:, 0] = np.clip((1 - alpha_l) * out[:, 0] + alpha_l * target_l, 0, 255)
         out[:, 1] = np.minimum(out[:, 1], c_cap)
@@ -272,8 +296,10 @@ def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
 
     # Alpha [0, 1] - Lower values will adjust primary luma less, keeping closer to original value in image
     alpha = 0.9 if primary_lch[:, 0] > target_primary_l else 0.5
-    
-    primary_lch = adjust_l_and_cap_c(primary_lch, target_primary_l, alpha_l=alpha, c_cap=chroma_cap)
+
+    primary_lch = adjust_l_and_cap_c(
+        primary_lch, target_primary_l, alpha_l=alpha, c_cap=chroma_cap
+    )
     primary_rgb = _lab_to_rgb(_lch_to_lab(primary_lch))[0]
 
     box_lch = _lch_from_contrast(desired_ratio=box_primary_contrast, lch1=primary_lch)
@@ -282,25 +308,31 @@ def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
     label_lch = _lch_from_contrast(desired_ratio=box_label_contrast, lch1=box_lch)
     label_rgb = _lab_to_rgb(_lch_to_lab(label_lch))[0]
 
-    text_rgb = _get_text_color(box_color_lch=box_lch, img_centers_lch=lch_centers, img_weights=weights)[0]
-    logger.info(f"{source_name} Primary: {primary_rgb}, Box: {box_rgb}, Text: {text_rgb}, Label: {label_rgb}")
+    text_rgb = _get_text_color(
+        box_color_lch=box_lch, img_centers_lch=lch_centers, img_weights=weights
+    )[0]
+    logger.info(
+        f'{source_name} Primary: {primary_rgb}, Box: {box_rgb}, Text: {text_rgb}, Label: {label_rgb}'
+    )
     return (
         tuple(int(x) for x in primary_rgb),
         tuple(int(x) for x in box_rgb),
         tuple(int(x) for x in text_rgb),
-        tuple(int(x) for x in label_rgb)
-        )
+        tuple(int(x) for x in label_rgb),
+    )
 
 
 def apply_color_overlay(base_path, color_rgb) -> Image.Image:
-    base = Image.open(base_path).convert("RGBA")
-    overlay = Image.new("RGBA", base.size, color_rgb + (255,))
+    base = Image.open(base_path).convert('RGBA')
+    overlay = Image.new('RGBA', base.size, color_rgb + (255,))
     overlay.putalpha(base.split()[3])
     return overlay
 
-def apply_color_overlap_image( width, height, color_rgb ) -> Image.Image:
-    overlay = Image.new("RGBA", [width, height], color_rgb + (255,))
+
+def apply_color_overlap_image(width, height, color_rgb) -> Image.Image:
+    overlay = Image.new('RGBA', [width, height], color_rgb + (255,))
     return overlay
+
 
 """
 def create_wrapped_image(banner_path, pfp_path, output_path):

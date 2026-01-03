@@ -11,3 +11,6 @@ AWAIZ_USER_ID = getenv('AWAIZ_USER_ID')
 KUSOGAKI_TOKEN = getenv('KUSOGAKI_TOKEN')
 
 ANILIST_BASE = 'https://graphql.anilist.co'
+
+WRAP_CHANNEL_ID = int(getenv('WRAP_CHANNEL_ID') or 0)
+WRAP_LOG_CHANNEL_ID = int(getenv('WRAP_LOG_CHANNEL_ID') or 0)

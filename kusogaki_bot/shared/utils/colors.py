@@ -199,7 +199,6 @@ def _get_text_color(box_color_lch, img_centers_lch, img_weights) -> np.ndarray:
 
 
 async def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
-    logger.info(f'Extracting colors from image')
     rgb = _read_image(source)
     lab = _rgb_to_lab(rgb)
 
@@ -311,9 +310,6 @@ async def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tu
     text_rgb = _get_text_color(
         box_color_lch=box_lch, img_centers_lch=lch_centers, img_weights=weights
     )[0]
-    logger.info(
-        f'{source_name} Primary: {primary_rgb}, Box: {box_rgb}, Text: {text_rgb}, Label: {label_rgb}'
-    )
     return (
         tuple(int(x) for x in primary_rgb),
         tuple(int(x) for x in box_rgb),

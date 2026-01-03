@@ -1,6 +1,7 @@
-import json
 import colorsys
+import json
 import logging
+import os
 import pdb
 from io import BytesIO
 from string import Template
@@ -9,7 +10,11 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 
 import kusogaki_bot.shared.utils.colors as colors
-from kusogaki_bot.features.aniwrap.fetch_data import UserData, fetch_demo_user_data, fetch_user_data
+from kusogaki_bot.features.aniwrap.fetch_data import (
+    UserData,
+    fetch_demo_user_data,
+    fetch_user_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +41,7 @@ NO_DATA_IMG = 'static/nodata.png'
 ELEMENTS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/elements.json'
 ANCHORS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/anchors.json'
 
+
 class GenerationResponse:
     def __init__(self, success: bool = True, error_msg: str = ''):
         self.success = success
@@ -43,7 +49,6 @@ class GenerationResponse:
 
 
 class AniWrapService:
-
     def __init__(self):
         self.load_data_into_templates()
         logger.info('Elements and Anchors Data Loaded!')
@@ -107,8 +112,7 @@ class AniWrapService:
             text_data['y_pos'] = anchor_data[anchor]['y'] + y_offset
         else:
             text_data['x_pos'] = (
-                element_data[after]['x_pos']
-                + element_data[after]['width']
+                element_data[after]['x_pos'] + element_data[after]['width']
             )
             text_data['y_pos'] = element_data[after]['y_pos']
 
@@ -130,7 +134,6 @@ class AniWrapService:
         text_data: dict,
         color: str = '#ffffff',
     ) -> dict:
-
         """Fetch the data from the data container"""
         font_size = text_data['size']
         font_name = text_data['font']
@@ -153,7 +156,6 @@ class AniWrapService:
             )
             text_data['y_pos'] = anchor_data[anchor]['y'] + y_offset
         else:
-            
             text_data['x_pos'] = (
                 element_data[after]['x_pos'] - x_offset - text_data['width']
             )
@@ -184,10 +186,11 @@ class AniWrapService:
 
         return image
 
-    async def create_colored_image(self, width:int, height:int, color_rgb ) -> Image.Image:
-        overlay = Image.new("RGBA", [width, height], color_rgb + (255,))
+    async def create_colored_image(
+        self, width: int, height: int, color_rgb
+    ) -> Image.Image:
+        overlay = Image.new('RGBA', [width, height], color_rgb + (255,))
         return overlay
-
 
     async def render_image(
         self,
@@ -203,15 +206,24 @@ class AniWrapService:
         height = image_data['height']
         anchor = image_data.get('anchor', 'main_anchor')
 
-        if url != "":
+        if url != '':
             image_response = requests.get(url)
             image: Image.Image = Image.open(BytesIO(image_response.content))
         else:
             # Get the HSV primary color, increase brightness component a bit, and create basic image to represent lack of image
-            col = colorsys.rgb_to_hsv( self.primary_color[0], self.primary_color[1], self.primary_color[2] )
-            dampen_col_hsv = ( col[0], col[1], min( 255, col[2] + 20 ) ) 
-            dampen_col = ( int(x) for x in colorsys.hsv_to_rgb( dampen_col_hsv[0],dampen_col_hsv[1],dampen_col_hsv[2] ) )
-            image = await self.create_colored_image(self.no_data_img.width, self.no_data_img.height, dampen_col) 
+            col = colorsys.rgb_to_hsv(
+                self.primary_color[0], self.primary_color[1], self.primary_color[2]
+            )
+            dampen_col_hsv = (col[0], col[1], min(255, col[2] + 20))
+            dampen_col = (
+                int(x)
+                for x in colorsys.hsv_to_rgb(
+                    dampen_col_hsv[0], dampen_col_hsv[1], dampen_col_hsv[2]
+                )
+            )
+            image = await self.create_colored_image(
+                self.no_data_img.width, self.no_data_img.height, dampen_col
+            )
 
         aspect_ratio = image.width / image.height
 
@@ -294,7 +306,10 @@ class AniWrapService:
         data = json.loads(raw_data)
         return data
 
-    async def generate(self, username: str, demo:bool = False) -> GenerationResponse:
+    def get_default_colors(self):
+        return [(150, 172, 34), (), (151, 148, 86), (255, 255, 255)]
+
+    async def generate(self, username: str, demo: bool = False) -> GenerationResponse:
         logger.info(f'Generating Demo Wrap for {username}...')
 
         if demo:
@@ -309,57 +324,94 @@ class AniWrapService:
         element_data = await self.load_elements(user_data)
         anchor_data = await self.load_anchors()
 
-        image_response = requests.get(user_data.banner_url)
-        banner = Image.open(BytesIO(image_response.content))
+        (
+            primary_color_raw,
+            box_color_raw,
+            self.text_color_from_image,
+            self.label_color_from_image,
+        ) = self.get_default_colors()
 
-        primary_color_raw, box_color_raw, self.text_color_from_image, self.label_color_from_image = colors.get_image_colors(banner)
+        if user_data.banner_url != '':
+            image_response = requests.get(user_data.banner_url)
+            banner = Image.open(BytesIO(image_response.content))
+            (
+                primary_color_raw,
+                box_color_raw,
+                self.text_color_from_image,
+                self.label_color_from_image,
+            ) = colors.get_image_colors(banner)
+
+        elif user_data.profile_pic_url != '':
+            image_response = requests.get(user_data.profile_pic_url)
+            banner = Image.open(BytesIO(image_response.content))
+            (
+                primary_color_raw,
+                box_color_raw,
+                self.text_color_from_image,
+                self.label_color_from_image,
+            ) = colors.get_image_colors(banner)
 
         self.label_color_hex = await self.rgb_to_hex(self.label_color_from_image)
         self.text_color_hex = await self.rgb_to_hex(self.text_color_from_image)
 
         alpha = 200 / 255
-        darker_primary_color = ( primary_color_raw[0] * alpha, primary_color_raw[1] * alpha, primary_color_raw[2] * alpha )
-        self.primary_color = tuple( ( int ( x ) for x in darker_primary_color ) )
+        darker_primary_color = (
+            primary_color_raw[0] * alpha,
+            primary_color_raw[1] * alpha,
+            primary_color_raw[2] * alpha,
+        )
+        self.primary_color = tuple((int(x) for x in darker_primary_color))
         self.primary_color_hex = await self.rgb_to_hex(self.primary_color)
 
         r, g, b = self.primary_color
-        h, s, v = colorsys.rgb_to_hsv(r/255, g/255, b/255)
+        h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
 
         s = min(max(s - 0.20, 0.0), 1.0)
         v = min(max(v + 0.10, 0.0), 1.0)
 
-        h_l, s_l, v_l = colorsys.rgb_to_hsv(r/255, g/255, b/255)
+        h_l, s_l, v_l = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
 
         s_l = min(max(s_l - 0.20, 0.0), 1.0)
         v_l = min(max(v_l + 0.20, 0.0), 1.0)
 
-        self.box_color = tuple(
-            int(c * 255) for c in colorsys.hsv_to_rgb(h, s, v)
-        )
+        self.box_color = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(h, s, v))
         self.box_color_hex = await self.rgb_to_hex(self.box_color)
 
         self.l_box_color = tuple(
-            int( c * 255 ) for c in colorsys.hsv_to_rgb( h_l, s_l, v_l )
+            int(c * 255) for c in colorsys.hsv_to_rgb(h_l, s_l, v_l)
         )
         self.l_box_color_hex = await self.rgb_to_hex(self.l_box_color)
 
-        bg = colors.apply_color_overlap_image(IMG_WIDTH, IMG_HEIGHT, self.primary_color ) 
+        bg = colors.apply_color_overlap_image(IMG_WIDTH, IMG_HEIGHT, self.primary_color)
         bg = await self.apply_rounded_corners(bg, IMG_WIDTH, IMG_HEIGHT, 8)
 
         draw = ImageDraw.ImageDraw(bg)
 
         await self.render_text(
-            draw, anchor_data, element_data, element_data['unofficial'], self.box_color_hex
+            draw,
+            anchor_data,
+            element_data,
+            element_data['unofficial'],
+            self.box_color_hex,
         )
         await self.render_text(
-            draw, anchor_data, element_data, element_data['heading'], self.text_color_hex
+            draw,
+            anchor_data,
+            element_data,
+            element_data['heading'],
+            self.text_color_hex,
         )
 
         # Anime Details
         await self.render_text(
-            draw, anchor_data, element_data, element_data['anime'], self.l_box_color_hex)
+            draw, anchor_data, element_data, element_data['anime'], self.l_box_color_hex
+        )
         await self.render_image(
-            bg, user_data.anime_img_url, anchor_data, element_data, element_data['anime_img']
+            bg,
+            user_data.anime_img_url,
+            anchor_data,
+            element_data,
+            element_data['anime_img'],
         )
 
         await self.render_text(
@@ -394,13 +446,16 @@ class AniWrapService:
             draw, anchor_data, element_data, element_data['anime_mean']
         )
 
-
         # Manga Details
         await self.render_text_right(
             draw, anchor_data, element_data, element_data['manga'], self.l_box_color_hex
         )
         await self.render_image(
-            bg, user_data.manga_img_url, anchor_data, element_data, element_data['manga_img']
+            bg,
+            user_data.manga_img_url,
+            anchor_data,
+            element_data,
+            element_data['manga_img'],
         )
 
         element_data['manga_count'] = await self.render_text_right(
@@ -455,7 +510,13 @@ class AniWrapService:
             draw, anchor_data, element_data['divider'], self.box_color_hex
         )
 
-        await self.render_text(draw, anchor_data, element_data, element_data['website'], self.l_box_color_hex)
+        await self.render_text(
+            draw,
+            anchor_data,
+            element_data,
+            element_data['website'],
+            self.l_box_color_hex,
+        )
 
         img = await self.apply_rounded_corners(bg, bg.width, bg.height, 8)
 

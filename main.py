@@ -14,7 +14,7 @@ def main() -> NoReturn:
     """
     try:
         bot = KusogakiBot()
-        bot.run(config.TEST_TOKEN)
+        bot.run(config.TOKEN)
     except Exception as e:
         logger.critical(f'Failed to start bot: {str(e)}')
         sys.exit(1)

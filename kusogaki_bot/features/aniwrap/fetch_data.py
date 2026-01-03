@@ -1,6 +1,7 @@
 import logging
 import pdb
 
+import aiohttp
 import requests
 
 import config
@@ -26,31 +27,34 @@ class UserData:
     banner_url: str = ''
 
 
-def get_user_id_from_username(username: str) -> str:
+async def get_user_id_from_username(username: str) -> str:
     """Hit the anilist api to get userId from username"""
 
     try:
-        response = requests.post(
-            url=config.ANILIST_BASE or '',
-            json={'query': user_query, 'variables': {'username': username}},
-        ).json()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url=config.ANILIST_BASE or '',
+                json={'query': user_query, 'variables': {'username': username}},
+            ) as response:
+                response_json = await response.json()
+
     except Exception as e:
         logger.error(f'ERROR while getting userid from username ( anilist ) \n{e}')
         return ''
 
-    data = response.get('data', {}).get('User', None)
+    data = response_json.get('data', {}).get('User', None)
     if data is None:
         return ''
 
     return data.get('id', '')
 
 
-def fetch_user_data(username: str) -> UserData:
+async def fetch_user_data(username: str) -> UserData:
     """Fetch user from kusogaki api using username"""
 
     user_data: UserData = UserData()
 
-    user_id = get_user_id_from_username(username)
+    user_id = await get_user_id_from_username(username)
 
     if user_id == '':
         user_data.error = True
@@ -62,20 +66,56 @@ def fetch_user_data(username: str) -> UserData:
     params = {'wrapYear': 2025}
     headers = {'Authorization': f'Bearer {config.KUSOGAKI_TOKEN}'}
 
-    data = {}
-
     try:
-        response = requests.get(url, params=params, headers=headers)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url=url, params=params, headers=headers) as response:
+                if response.status == 204:
+                    user_data.error = True
+                    user_data.error_msg = '204 No Content | Wrap is not available!'
+                    return user_data
 
-        if response.status_code == 204:
-            user_data.error = True
-            user_data.error_msg = '204 No Content | Wrap is not available!'
-            return user_data
+                response.raise_for_status()
+                data = await response.json(content_type=None)
 
-        response.raise_for_status()
-        data = response.json()
+                user_data.name = data['Username']
+                user_data.anime_count = data['AnimeCompleted']
+                user_data.anime_eps = data['EpisodesWatched']
+                anime_mean_score = (
+                    str(round(data['AnimeMeanScore'], 1)) + '%'
+                    if data['AnimeMeanScore'] is not None
+                    else '-'
+                )
+                user_data.anime_mean_score = anime_mean_score
+                user_data.anime_img_url = data.get('TopAnime', '')[0].get(
+                    'ImageUrl', ''
+                )
 
-    except requests.exceptions.HTTPError as http_err:
+                user_data.manga_count = data['MangaCompleted']
+                user_data.manga_chaps = data['ChaptersRead']
+                manga_mean_score = (
+                    str(round(data['MangaMeanScore'], 1)) + '%'
+                    if data['MangaMeanScore'] is not None
+                    else '-'
+                )
+                user_data.manga_mean_score = manga_mean_score
+                user_data.manga_img_url = data.get('TopManga', '')[0].get(
+                    'ImageUrl', ''
+                )
+
+                user_data.profile_color = data['TextColor']
+
+                user_data.profile_pic_url = (
+                    data['ProfileImageUrl']
+                    if data['ProfileImageUrl'] is not None
+                    else ''
+                )
+                user_data.banner_url = (
+                    data['BannerImageUrl'] if data['BannerImageUrl'] is not None else ''
+                )
+
+                return user_data
+
+    except aiohttp.ClientResponseError as http_err:
         logger.error(f'HTTP error occurred: {http_err}')
         user_data.error = True
         user_data.error_msg = f'HTTP error occurred: {http_err}'
@@ -87,40 +127,10 @@ def fetch_user_data(username: str) -> UserData:
         user_data.error_msg = f'Error occurred: {err}'
         return user_data
 
-    user_data.name = data['Username']
-    user_data.anime_count = data['AnimeCompleted']
-    user_data.anime_eps = data['EpisodesWatched']
-    anime_mean_score = (
-        str(round(data['AnimeMeanScore'], 1)) + '%'
-        if data['AnimeMeanScore'] is not None
-        else '-'
-    )
-    user_data.anime_mean_score = anime_mean_score
-    user_data.anime_img_url = data.get('TopAnime', '')[0].get('ImageUrl', '')
 
-    user_data.manga_count = data['MangaCompleted']
-    user_data.manga_chaps = data['ChaptersRead']
-    manga_mean_score = (
-        str(round(data['MangaMeanScore'], 1)) + '%'
-        if data['MangaMeanScore'] is not None
-        else '-'
-    )
-    user_data.manga_mean_score = manga_mean_score
-    user_data.manga_img_url = data.get('TopManga', '')[0].get('ImageUrl', '')
+async def fetch_demo_user_data(username: str) -> UserData:
+    """Retrun some random data for testing"""
 
-    user_data.profile_color = data['TextColor']
-
-    user_data.profile_pic_url = (
-        data['ProfileImageUrl'] if data['ProfileImageUrl'] is not None else ''
-    )
-    user_data.banner_url = (
-        data['BannerImageUrl'] if data['BannerImageUrl'] is not None else ''
-    )
-
-    return user_data
-
-
-def fetch_demo_user_data(username: str) -> UserData:
     user_data = UserData()
 
     user_data.name = username

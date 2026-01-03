@@ -6,8 +6,10 @@ import pdb
 from io import BytesIO
 from string import Template
 
+import aiohttp
 import requests
 from PIL import Image, ImageDraw, ImageFont
+from viztracer import VizTracer
 
 import kusogaki_bot.shared.utils.colors as colors
 from kusogaki_bot.features.aniwrap.fetch_data import (
@@ -46,6 +48,7 @@ class GenerationResponse:
     def __init__(self, success: bool = True, error_msg: str = ''):
         self.success = success
         self.error_msg = error_msg
+        self.image_bytes = bytes()
 
 
 class AniWrapService:
@@ -207,8 +210,10 @@ class AniWrapService:
         anchor = image_data.get('anchor', 'main_anchor')
 
         if url != '':
-            image_response = requests.get(url)
-            image: Image.Image = Image.open(BytesIO(image_response.content))
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as image_response:
+                    image_bytes = await image_response.read()
+                    image: Image.Image = Image.open(BytesIO(image_bytes))
         else:
             # Get the HSV primary color, increase brightness component a bit, and create basic image to represent lack of image
             col = colorsys.rgb_to_hsv(
@@ -313,9 +318,9 @@ class AniWrapService:
         logger.info(f'Generating Demo Wrap for {username}...')
 
         if demo:
-            user_data = fetch_demo_user_data(username)
+            user_data = await fetch_demo_user_data(username)
         else:
-            user_data = fetch_user_data(username)
+            user_data = await fetch_user_data(username)
 
         if user_data.error:
             print(f'ERROR : \n{user_data.error_msg}')
@@ -520,6 +525,11 @@ class AniWrapService:
 
         img = await self.apply_rounded_corners(bg, bg.width, bg.height, 8)
 
-        img.save(f'wraps/{username}.png')
+        response = GenerationResponse()
 
-        return GenerationResponse()
+        with BytesIO() as image_binary_container:
+            img.save(image_binary_container, 'PNG')
+            image_binary_container.seek(0)
+            response.image_bytes = image_binary_container.read()
+
+        return response

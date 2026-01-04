@@ -14,6 +14,7 @@ import config
 from kusogaki_bot.core import BaseCog, KusogakiBot
 from kusogaki_bot.features.aniwrap.service import AniWrapService
 from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
+from kusogaki_bot.features.aniwrap.data import MiniWrapMainView
 
 logger = logging.getLogger(__name__)
 
@@ -184,18 +185,23 @@ class AniWrapCog(BaseCog):
             await ctx.channel.send(embed=error_embd)
             logger.error(f'ERROR OCCURRED while generating wrap for {username}')
 
-    @app_commands.command(name='miniwrapslash', description='Generate a mini wrap!')
-    @app_commands.describe(
-        design='New designs uses colors from your banner/pfp to generate wraps! Old one uses your profile color',
-        token='Your anilist token ( used to verify the user ). It is never stored!',
-    )
-    async def miniwrap(
-        self, interaction: Interaction, design: Literal['New', 'Old'], token: str
-    ) -> None:
-        await self.wrap_queue.put(WrapRequest(token, interaction.user, design))
+    @app_commands.command(name='miniwrap', description='Generate a mini wrap!')
+    async def miniwrap(self, interaction: Interaction) -> None:
+        async def submit_callback(interaction: Interaction, style, token: str):
+            await self.wrap_queue.put(WrapRequest(token, interaction.user, style))
+            logger.info(style)
+
+        view = MiniWrapMainView(submit_callback)
+        embd, _ = await get_embed(
+            EmbedType.NORMAL,
+            'Pick Design',
+            '[click here](https://anilist.co/api/v2/oauth/authorize?client_id=8704&response_type=token) to get your anilist token!',
+        )
 
         await interaction.response.send_message(
-            'You will receive your wrap via DM shortly!', ephemeral=True
+            embed=embd,
+            view=view,
+            ephemeral=True,
         )
 
 

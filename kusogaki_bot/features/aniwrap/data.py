@@ -51,21 +51,23 @@ class MiniWrapMainView(View):
         self.select.callback = lambda interaction: interaction.response.defer(
             ephemeral=True
         )
-
         self.add_item(self.select)
 
-        self.submit_btn = discord.ui.Button(
+        self.token_btn = discord.ui.Button(
             style=discord.ButtonStyle.gray, label='Enter Token'
         )
-        self.submit_btn.callback = self.enter_token_callback
-        self.add_item(self.submit_btn)
+        self.token_btn.callback = self.token_btn_callback
+        self.add_item(self.token_btn)
 
-    async def enter_token_callback(self, interaction: Interaction) -> None:
+    async def token_btn_callback(self, interaction: Interaction) -> None:
         token_input_modal = MiniWrapInputModal(
-            self.submit_callback, self.select.values[0]
+            self.submit_callback,
+            self.select.values[0] if len(self.select.values) > 0 else 'NEW',
         )
 
-        self.select.disabled = True
-        self.submit_btn.disabled = True
-
         await interaction.response.send_modal(token_input_modal)
+
+        self.select.disabled = True
+        self.token_btn.disabled = True
+
+        await interaction.edit_original_response(view=self)

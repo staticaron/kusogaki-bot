@@ -89,7 +89,7 @@ class AniWrapCog(BaseCog):
             '[click here](https://anilist.co/api/v2/oauth/authorize?client_id=8704&response_type=token) to get your anilist token!',
         )
 
-        await interaction.followup.send(
+        await interaction.response.send_message(
             embed=embd,
             view=view,
             ephemeral=True,
@@ -97,7 +97,7 @@ class AniWrapCog(BaseCog):
 
     @commands.has_permissions(administrator=True)
     @app_commands.command(
-        name='start wrap task', description='Starts the wrap processing task'
+        name='start_wrap_task', description='Starts the wrap processing task'
     )
     async def start_wrap_task(self, interaction: Interaction) -> None:
         """Restart the wrap processing task"""

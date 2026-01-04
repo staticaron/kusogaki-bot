@@ -1,10 +1,10 @@
+import logging
+
 import cv2
 import numpy as np
-from sklearn.cluster import MiniBatchKMeans
-from sklearn.metrics import silhouette_score
-from joblib import Parallel, delayed
 from PIL import Image
-import logging
+from sklearn.cluster import KMeans, MiniBatchKMeans
+from sklearn.metrics import silhouette_score
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def _is_skin_lab(lab: np.ndarray) -> np.ndarray:
 
 
 def _lch_contrast_ratio(lch1, lch2) -> float:
-    if lch1[:, 0] > lch2[0, 0]:
+    if lch1[0, 0] > lch2[0, 0]:
         luma_max, luma_min = lch1[0, 0], lch2[0, 0]
     else:
         luma_max, luma_min = lch2[0, 0], lch1[0, 0]
@@ -67,49 +67,67 @@ def _lch_from_contrast(desired_ratio, lch1) -> np.ndarray:
     return lch2
 
 
+def _neutral_chroma_threshold(luma, min_threshold=3.5, max_threshold=14) -> float:
+    # Returns dynamic threshold to consider a color to be "neutral". Brighter colors = higher chroma threshold.
+    return min_threshold + (max_threshold - min_threshold) * (luma / 255) ** 0.5
+
+
+def _sample_pixels(img, max_samples=12500, random_state=69):
+    n = img.shape[0]
+    if n <= max_samples:
+        return img
+    rs = np.random.RandomState(random_state)
+    idx = rs.choice(n, size=max_samples, replace=False)
+    return img[idx]
+
+
 def _read_image(source: str | Image.Image) -> np.ndarray:
     if isinstance(source, str):
-        img = cv2.imread(source, cv2.IMREAD_UNCHANGED)
-        if img is None:
-            raise FileNotFoundError(f'Image not found: {source}')
-    else:
-        pil_img = source.convert('RGBA')
-        img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGBA2BGRA)
+        try:
+            source = Image.open(source)
+        except FileNotFoundError:
+            logger.warning(f'Banner image not found')
+            return np.array([[0, 0, 0]], dtype=np.uint8)
 
-    h, w = img.shape[:2]
-    if max(h, w) > 500:
-        scale = 500.0 / max(h, w)
-        new_w, new_h = int(w * scale), int(h * scale)
-        img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    # Crop code to target (from canvas.py)
+    target_width, target_height = 1440, 260
+    banner_width, banner_height = source.size
 
-    if img.ndim == 2:
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        rgb = img.reshape(-1, 3)
-    elif img.shape[2] == 4:
-        rgba = cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA)
-        rgba = rgba.reshape(-1, 4)
-        rgba = rgba[rgba[:, 3] > 250]
-        rgb = rgba[:, :3]
-    else:
-        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).reshape(-1, 3)
+    ratio = max(target_width / banner_width, target_height / banner_height)
+    new_width = int(banner_width * ratio)
+    new_height = int(banner_height * ratio)
+    source = source.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    width_diff = (new_width - target_width) // 2
+    height_diff = (new_height - target_height) // 2
+    source = source.crop(
+        (
+            width_diff,
+            height_diff,
+            width_diff + target_width,
+            height_diff + target_height,
+        )
+    )
+
+    # Alpha mask, only consider pixels without high transparency
+    pil_img = source.convert('RGBA')
+    rgba = np.array(pil_img)
+
+    alpha_threshold = 150
+    rgba = rgba.reshape(-1, 4)
+    rgba = rgba[rgba[:, 3] >= alpha_threshold]
+    rgb = rgba[:, :3]
+
+    if rgb.size == 0:
+        logger.warning(f'Banner image is empty: {source}')
+        rgb = np.array([[0, 0, 0]], dtype=np.uint8)
 
     return rgb.astype(np.uint8)
 
 
-def _choose_k_dynamic(img_rgb_uint8: np.ndarray, k_min=3, k_max=10) -> int:
-    def sample_pixels(max_samples=9500, random_state=69):
-        n = img_rgb_uint8.shape[0]
-        if n <= max_samples:
-            return img_rgb_uint8
-        rs = np.random.RandomState(random_state)
-        idx = rs.choice(n, size=max_samples, replace=False)
-        return img_rgb_uint8[idx]
-
-    sample_rgb = sample_pixels()
-    sample_lab = _rgb_to_lab(sample_rgb)
-
-    def evaluate_k(k: int):
-        km = MiniBatchKMeans(n_clusters=k, random_state=42, n_init='auto')
+def _choose_k_dynamic(sample_lab: np.ndarray, k_min=3, k_max=9) -> int:
+    def evaluate_k(k_test: int):
+        km = MiniBatchKMeans(n_clusters=k_test, random_state=42, n_init='auto')
         labels = km.fit_predict(sample_lab)
         try:
             sil = silhouette_score(sample_lab, labels, metric='euclidean')
@@ -117,17 +135,18 @@ def _choose_k_dynamic(img_rgb_uint8: np.ndarray, k_min=3, k_max=10) -> int:
             logger.debug(f'Failed to compute silhouette_score: {e}')
             sil = -1.0
 
-        counts = np.bincount(labels, minlength=k).astype(np.float32)
+        counts = np.bincount(labels, minlength=k_test).astype(np.float32)
         weights = counts / counts.sum()
         small_fraction = float((weights < 0.01).mean())
         cluster_variance = float(weights.max() - weights.min())
         score = sil - 0.20 * small_fraction - 0.10 * cluster_variance
-        logger.debug(f'k={k}: score {score}')
-        return k, score, small_fraction
+        logger.debug(f'k={k_test}: score {score}')
+        return k_test, score, small_fraction
 
-    results = Parallel(n_jobs=-1, prefer='threads')(
-        delayed(evaluate_k)(k) for k in range(k_min, k_max + 1)
-    )
+    results = []
+    for k in range(k_min, k_max + 1):
+        results.append(evaluate_k(k))
+
     best_score = max(r[1] for r in results)
     tol = 0.02
     near = [r for r in results if (best_score - r[1]) <= tol]
@@ -162,7 +181,7 @@ def _get_text_color(box_color_lch, img_centers_lch, img_weights) -> np.ndarray:
         [[initial_luma, initial_chroma, candidates_h[0]]], dtype=np.float32
     )
 
-    # Select most pallatte-matching analagous hue
+    # Select most palate-matching analogous hue
     for h in candidates_h:
         lch_test = np.array([[initial_luma, initial_chroma, h]], dtype=np.float32)
 
@@ -200,13 +219,15 @@ def _get_text_color(box_color_lch, img_centers_lch, img_weights) -> np.ndarray:
 
 async def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tuple]:
     rgb = _read_image(source)
+    rgb = _sample_pixels(rgb, max_samples=15000)
     lab = _rgb_to_lab(rgb)
+    lab_subset = _sample_pixels(lab, max_samples=5000)
 
-    k = _choose_k_dynamic(rgb)
-    # k = 6
+    k = _choose_k_dynamic(lab_subset)
+
     source_name = source if isinstance(source, str) else 'image'
     logger.debug(f'{source_name} chose k={k} clusters')
-    kmeans = MiniBatchKMeans(n_clusters=k, random_state=42, n_init='auto').fit(lab)
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init='auto').fit(lab)
 
     centers_lab = kmeans.cluster_centers_.astype(np.float32)
     labels = kmeans.labels_
@@ -220,18 +241,19 @@ async def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tu
     lch_centers = _lab_to_lch(centers_lab)
     skin_mask = _is_skin_lab(centers_lab)
 
-    neutral_chroma_threshold = 8.0
     neutral_dominant_threshold = 0.45
-    skin_dominant_threshold = 0.25
+    skin_dominant_threshold = 0.33
 
     target_primary_l = 35  # Primary luma
     box_primary_contrast = 1.25
     box_label_contrast = 2.5
-    bad_luma_threshold = 0.45
+    bad_luma_threshold = 0.42
     bad_luma_delta = 100
+    yellow_range = (78, 102)
 
     chroma = lch_centers[:, 1]
-    neutral_mask = chroma < neutral_chroma_threshold
+    luma = lch_centers[:, 0]
+    neutral_mask = chroma < _neutral_chroma_threshold(luma)
 
     # Select primary
     primary_idx = None
@@ -239,23 +261,10 @@ async def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tu
         if bool(neutral_mask[i]):
             continue
         is_skin = bool(skin_mask[i])
+        is_yellow = yellow_range[0] < lch_centers[i][2] < yellow_range[1]
         if (not is_skin) or (is_skin and weights[i] >= skin_dominant_threshold):
-            if (
-                lch_centers[i][0] - target_primary_l > bad_luma_delta
-                and bad_luma_threshold > weights[i]
-            ):
-                continue
-            primary_idx = i
-            break
-    # Remove skin check
-    if primary_idx is None:
-        logger.debug(f'{source_name} Failed skin check')
-        for i in range(k):
-            if bool(neutral_mask[i]):
-                continue
-            if (
-                lch_centers[i][0] - target_primary_l > bad_luma_delta
-                and bad_luma_threshold > weights[i]
+            if lch_centers[i][0] - target_primary_l > bad_luma_delta and (
+                bad_luma_threshold > weights[i] or is_yellow
             ):
                 continue
             primary_idx = i
@@ -263,6 +272,16 @@ async def get_image_colors(source: Image.Image) -> tuple[tuple, tuple, tuple, tu
     # Remove luma check
     if primary_idx is None:
         logger.debug(f'{source_name} Failed luma check')
+        for i in range(k):
+            if bool(neutral_mask[i]):
+                continue
+            is_skin = bool(skin_mask[i])
+            if (not is_skin) or (is_skin and weights[i] >= skin_dominant_threshold):
+                primary_idx = i
+                break
+    # Remove skin check
+    if primary_idx is None:
+        logger.debug(f'{source_name} Failed skin check')
         for i in range(k):
             if bool(neutral_mask[i]):
                 continue
@@ -325,118 +344,47 @@ def apply_color_overlay(base_path, color_rgb) -> Image.Image:
     return overlay
 
 
-def apply_color_overlap_image(width, height, color_rgb) -> Image.Image:
-    overlay = Image.new('RGBA', [width, height], color_rgb + (255,))
-    return overlay
+class ColorUtils:
+    """Color conversion and manipulation utilities"""
 
+    @staticmethod
+    def hex_to_rgb(hex_color):
+        r = int(hex_color[1:3], 16) / 255
+        g = int(hex_color[3:5], 16) / 255
+        b = int(hex_color[5:7], 16) / 255
+        return r, g, b, 1.0
 
-"""
-def create_wrapped_image(banner_path, pfp_path, output_path):
-    primary_color, box_color, text_color, label_color = get_image_colors(banner_path)
-
-    img = Image.new("RGBA", (1440, 1080), (0, 0, 0))
-
-    banner = Image.open(banner_path).convert("RGBA")
-    target_width, target_height = 1440, 260
-    banner_width, banner_height = banner.size
-
-    ratio = max(target_width / banner_width, target_height / banner_height)
-    new_width = int(banner_width * ratio)
-    new_height = int(banner_height * ratio)
-    banner = banner.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-    width_diff = (new_width - target_width) // 2
-    height_diff = (new_height - target_height) // 2
-    banner = banner.crop(
-        (
-            width_diff,
-            height_diff,
-            width_diff + target_width,
-            height_diff + target_height,
+    @staticmethod
+    def hex_to_rgb_int(hex_color):
+        hex_color = hex_color.lstrip('#')
+        return (
+            int(hex_color[0:2], 16),
+            int(hex_color[2:4], 16),
+            int(hex_color[4:6], 16),
         )
-    )
 
-    img.paste(banner, (0, 0), banner)
+    @staticmethod
+    def to_rgb_tuple(color):
+        if isinstance(color, tuple):
+            return color
+        return ColorUtils.hex_to_rgb_int(color)
 
-    gradient_colored = apply_color_overlay("Images/gradient.png", primary_color)
-    temp = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    temp.paste(gradient_colored, (0, 29))
-    img = Image.alpha_composite(img, temp)
+    @staticmethod
+    def rgb_to_hex(rgb_tuple):
+        """Convert RGB tuple to hex color"""
+        if isinstance(rgb_tuple, str):
+            return rgb_tuple
+        r, g, b = rgb_tuple[:3]
+        return f'#{r:02x}{g:02x}{b:02x}'
 
-    background_colored = apply_color_overlay("Images/background.png", primary_color)
-    temp = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    mask = Image.new("RGBA", background_colored.size, (0, 0, 0, 200))
-    temp.paste(background_colored, (0, 247), mask)
-    # temp.paste(background_colored, (0, 247))
-    img = Image.alpha_composite(img, temp)
-
-    template_colored = apply_color_overlay("Images/template3.png", box_color)
-    temp = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    temp.paste(template_colored, (92, 308))
-    img = Image.alpha_composite(img, temp)
-
-    pfp = Image.open(pfp_path).convert("RGBA")
-    pfp = pfp.resize((145, 145), Image.Resampling.LANCZOS)
-    img.paste(pfp, (92, 92), pfp)
-
-    label_img = apply_color_overlay("Images/template4.png", label_color)
-    img.paste(label_img, (92, 308), label_img)
-
-    img.save(output_path, "PNG")
-
-
-def main():
-    test_pairs = [
-        ("Test Images/banner.jpg", "Test Images/pfp.png"),
-        ("Test Images/Banner2.png", "Test Images/pfp2.png"),
-        ("Test Images/banner3.jpg", "Test Images/pfp3.png"),
-        ("Test Images/banner4.jpg", "Test Images/pfp4.png"),
-        ("Test Images/banner5.jpg", "Test Images/pfp5.png"),
-        ("Test Images/banner6.jpg", "Test Images/pfp6.png"),
-        ("Test Images/banner7.jpg", "Test Images/pfp7.jpg"),
-        ("Test Images/banner8.jpg", "Test Images/pfp8.png"),
-        ("Test Images/banner9.jpg", "Test Images/pfp9.png"),
-        ("Test Images/banner10.jpg", "Test Images/pfp10.png"),
-        ("Test Images/banner11.jpg", "Test Images/pfp11.png"),
-        ("Test Images/banner12.jpg", "Test Images/pfp12.jpg"),
-        ("Test Images/banner13.jpg", "Test Images/pfp13.png"),
-        ("Test Images/banner14.jpg", "Test Images/pfp14.jpg"),
-        ("Test Images/banner15.jpg", "Test Images/pfp15.png"),
-        ("Test Images/banner16.jpg", "Test Images/pfp16.png"),
-        ("Test Images/banner17.jpg", "Test Images/pfp17.png"),
-        ("Test Images/banner18.png", "Test Images/pfp18.png"),
-        ("Test Images/banner19.jpg", "Test Images/pfp19.png"),
-        ("Test Images/banner20.jpg", "Test Images/pfp20.png"),
-        ("Test Images/banner21.jpg", "Test Images/pfp21.png"),
-        ("Test Images/banner22.jpg", "Test Images/pfp22.png"),
-        ("Test Images/banner23.jpg", "Test Images/pfp23.png"),
-        ("Test Images/banner24.jpg", "Test Images/pfp24.png"),
-        ("Test Images/banner25.jpg", "Test Images/pfp25.png"),
-        ("Test Images/banner27.jpg", "Test Images/pfp26.png"),
-        ("Test Images/banner28.jpg", "Test Images/pfp27.jpg"),
-        ("Test Images/banner29.jpg", "Test Images/pfp28.png"),
-        ("Test Images/banner30.jpg", "Test Images/pfp29.jpg"),
-        ("Test Images/banner31.jpg", "Test Images/pfp30.png"),
-        ("Test Images/banner32.jpg", "Test Images/pfp31.jpg"),
-        ("Test Images/banner33.jpg", "Test Images/pfp32.png"),
-        ("Test Images/banner34.jpg", "Test Images/pfp33.png"),
-        ("Test Images/banner35.jpg", "Test Images/pfp34.png"),
-        ("Test Images/banner36.jpg", "Test Images/pfp35.png"),
-        ("Test Images/banner37.jpg", "Test Images/pfp36.png"),
-        ("Test Images/banner38.jpeg", "Test Images/pfp37.png"),
-        ("Test Images/banner39.jpg", "Test Images/pfp38.png"),
-        ("Test Images/banner40.jpg", "Test Images/pfp39.png"),
-        ("Test Images/banner41.jpeg", "Test Images/pfp40.png"),
-        ("Test Images/banner42.jpg", "Test Images/pfp41.png"),
-        ("Test Images/banner43.jpg", "Test Images/pfp42.png"),
-    ]
-
-    for i, (banner_path, pfp_path) in enumerate(test_pairs, 1):
-        output_path = f"Profile Test Images/profile{i}.png"
-        create_wrapped_image(banner_path, pfp_path, output_path)
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    main()
-"""
+    @staticmethod
+    def normalize_color(color):
+        """Normalize color to consistent format"""
+        if isinstance(color, str):
+            return ColorUtils.hex_to_rgb(color)
+        if isinstance(color, tuple) and len(color) >= 3:
+            if all(0 <= c <= 1 for c in color[:3]):
+                return color
+            r, g, b = color[:3]
+            return r / 255.0, g / 255.0, b / 255.0, 1.0
+        return color

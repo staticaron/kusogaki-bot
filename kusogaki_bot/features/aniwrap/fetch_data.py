@@ -2,7 +2,7 @@ import logging
 import pdb
 
 import aiohttp
-import requests
+import jwt
 
 import config
 from kusogaki_bot.features.aniwrap.query import user_query
@@ -26,6 +26,19 @@ class UserData:
     profile_pic_url: str = ''
     banner_url: str = ''
 
+    def __init__(self, error: bool = False, error_msg: str = ''):
+        self.error = error
+        self.error_msg = error_msg
+
+
+class TokenResponse:
+    def __init__(
+        self, error: bool = False, error_msg: str = '', user_id: int = 0
+    ) -> None:
+        self.error = error
+        self.error_msg = error_msg
+        self.user_id = user_id
+
 
 async def get_user_id_from_username(username: str) -> str:
     """Hit the anilist api to get userId from username"""
@@ -48,16 +61,32 @@ async def get_user_id_from_username(username: str) -> str:
     return data.get('id', '')
 
 
-async def fetch_user_data(username: str) -> UserData:
+async def get_id_from_token(token: str) -> TokenResponse:
+    """Returns the aniList Id from token"""
+
+    try:
+        data = jwt.decode(token, options={'verify_signature': False})
+    except Exception:
+        return TokenResponse(True, 'Invalid Token')
+
+    return TokenResponse(False, '', data['sub'])
+
+
+async def fetch_user_data(token: str) -> UserData:
     """Fetch user from kusogaki api using username"""
 
     user_data: UserData = UserData()
 
-    user_id = await get_user_id_from_username(username)
+    token_response = await get_id_from_token(token)
 
-    if user_id == '':
+    if token_response.error:
+        return UserData(False, token_response.error_msg)
+
+    user_id = token_response.user_id
+
+    if user_id == '' or user_id == 0:
         user_data.error = True
-        user_data.error_msg = 'Failed to get UserID from username!'
+        user_data.error_msg = token_response.error_msg
         return user_data
 
     url = f'https://kusogaki.co/api/alwrap/statistics/{user_id}'
@@ -69,7 +98,7 @@ async def fetch_user_data(username: str) -> UserData:
             async with session.get(url=url, params=params, headers=headers) as response:
                 if response.status == 204:
                     user_data.error = True
-                    user_data.error_msg = '204 No Content | Wrap is not available!'
+                    user_data.error_msg = '204 No Content | Wrap is not available!\n1. Make sure you have applied for your wrap @ https://kusogaki.co/alwrap \n2. Wait until you receive your wrap on anilist!'
                     return user_data
 
                 response.raise_for_status()
@@ -115,12 +144,12 @@ async def fetch_user_data(username: str) -> UserData:
 
     except aiohttp.ClientResponseError as http_err:
         user_data.error = True
-        user_data.error_msg = f'HTTP error occurred: {http_err}'
+        user_data.error_msg = f'HTTP error occurred: ```{http_err}```'
         return user_data
 
     except Exception as err:
         user_data.error = True
-        user_data.error_msg = f'Error occurred: {err}'
+        user_data.error_msg = f'Error occurred: ```{err}```'
         return user_data
 
 

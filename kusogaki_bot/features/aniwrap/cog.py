@@ -4,8 +4,10 @@ import os
 import pdb
 import time
 from io import BytesIO
+from typing import Literal
 
 import discord
+from discord import Interaction, app_commands
 from discord.ext import commands, tasks
 
 import config
@@ -17,12 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class WrapRequest:
-    user_id: int = 0
-    user_name: str = ''
-
-    def __init__(self, user_id, user_name) -> None:
-        self.user_id = user_id
-        self.user_name = user_name
+    def __init__(self, token, user, wt) -> None:
+        self.token = token
+        self.user = user
+        self.wt = wt
 
 
 class AniWrapCog(BaseCog):
@@ -41,6 +41,43 @@ class AniWrapCog(BaseCog):
     async def cog_unload(self):
         self.process_wraps.cancel()
 
+    async def send_user_message(
+        self,
+        user: discord.User,
+        msg: str = '',
+        embd: discord.Embed | None = None,
+        file: discord.File | None = None,
+    ) -> bool:
+        try:
+            if file is None:
+                if embd is None:
+                    await user.send(msg)
+                else:
+                    await user.send(msg, embed=embd)
+            else:
+                await user.send(
+                    msg,
+                    file=file,
+                )
+            return True
+        except discord.Forbidden:
+            await self.log_in_wrap_channel(f"`{user.name}` can't receive messages")
+        except discord.HTTPException:
+            await self.log_in_wrap_channel(
+                f'`Unable to send wrap to {user.name}`, HTTPException'
+            )
+
+        return False
+
+    async def log_in_wrap_channel(self, message, embed: discord.Embed | None = None):
+        if isinstance(self.wrap_log_channel, discord.abc.Messageable):
+            if embed is None:
+                await self.wrap_log_channel.send(message)
+            else:
+                await self.wrap_log_channel.send(message, embed=embed)
+        else:
+            logger.error("Can't send message in WRAP LOG CHANNEL")
+
     @tasks.loop(seconds=5)
     async def process_wraps(self) -> None:
         if self.is_processing:
@@ -53,36 +90,53 @@ class AniWrapCog(BaseCog):
             self.is_processing = True
 
         request = await self.wrap_queue.get()
-        userid = request.user_id
-        username = request.user_name
+        token = request.token
+        user: discord.User = request.user
+        wt = request.wt
 
         t0 = time.time()
 
-        response = await self.service.generate(username)
+        response = await self.service.generate(token, wt)
 
         if response.success:
             with BytesIO(response.image_bytes) as img_binary:
-                wrap_img = discord.File(img_binary, filename=f'{username}.png')
+                # generate image using image binary data from generate()
+                wrap_img = discord.File(img_binary, filename=f'{response.username}.png')
 
-                if isinstance(self.wrap_channel, discord.abc.Messageable):
-                    await self.wrap_channel.send(f'<@{userid}>', file=wrap_img)
-                    logger.info(f'Wrap Generated for {username}')
+                # try sending the wrap image as a DM to the user who requested it
+                success = await self.send_user_message(
+                    user,
+                    f'Mini Wrap Generated - {response.username}!',
+                    file=wrap_img,
+                )
+
+                # if message fails to send, log the error in the log channel
+                if success:
+                    t1 = time.time()
+                    logger.info(
+                        f'Wrap Generated for : {response.username}, took : {t1 - t0}'
+                    )
                 else:
-                    logger.error("Can't send wrap in the WRAP CHANNEL")
-
-                t1 = time.time()
-                logger.info(f'Wrap Generated for : {username}, took : {t1 - t0}')
+                    logger.info(
+                        f'Wrap generation for {response.username} unsuccessful!'
+                    )
+                    await self.log_in_wrap_channel(
+                        f'Wrap generation for {response.username} unsuccessful!'
+                    )
         else:
             error_embd, _ = await get_embed(
-                EmbedType.ERROR, 'ERROR!', response.error_msg
+                EmbedType.ERROR, f'ERROR! - {response.username}', response.error_msg
             )
 
-            if isinstance(self.wrap_log_channel, discord.abc.Messageable):
-                await self.wrap_log_channel.send(embed=error_embd)
-            else:
-                logger.error("Can't send error message in the WRAP LOG CHANNEL")
+            # let user know about the error
+            success = await self.send_user_message(user, '', embd=error_embd)
 
-            logger.error(f'ERROR OCCURRED while generating wrap for {username}')
+            # log the error in the log channel
+            await self.log_in_wrap_channel('', embed=error_embd)
+
+            logger.error(
+                f'ERROR OCCURRED while generating wrap for {response.username}'
+            )
 
         self.is_processing = False
 
@@ -93,22 +147,18 @@ class AniWrapCog(BaseCog):
         self.wrap_channel = self.bot.get_channel(config.WRAP_CHANNEL_ID)
         self.wrap_log_channel = self.bot.get_channel(config.WRAP_LOG_CHANNEL_ID)
 
-    @commands.hybrid_command(
-        name='aniwrap',
-        aliases=['miniwrap', 'wrap', 'alwrap'],
-        description='Generate MiniWrap',
-    )
-    async def aniwrap(
-        self,
-        ctx: commands.Context,
-        username: str,
-    ):
-        """Text Command for generating AlWrap"""
-        await ctx.typing()
+    # @commands.hybrid_command(
+    #    name='miniwrap',
+    #    aliases=['mw', 'alwrap'],
+    #    description='Generate MiniWrap',
+    # )
+    # async def aniwrap(self, ctx: commands.Context, username: str, wt='c'):
+    #    """Text Command for generating AlWrap"""
+    #    await ctx.typing()
 
-        await self.wrap_queue.put(WrapRequest(ctx.author.id, username))
+    #    await self.wrap_queue.put(WrapRequest(token, ctx.author, wt))
 
-        await ctx.reply('Generation will begin shortly!')
+    #    await ctx.reply('You will receive your wrap via DM shortly!')
 
     @commands.hybrid_command(
         name='dummywrap',
@@ -118,7 +168,7 @@ class AniWrapCog(BaseCog):
     async def send_dummy_wrap(self, ctx: commands.Context, username: str):
         await ctx.typing()
 
-        response = await self.service.generate(username, True)
+        response = await self.service.generate(username, 'd')
 
         if response.success:
             wrap_file = discord.File(f'wraps/{username}.png')
@@ -133,6 +183,20 @@ class AniWrapCog(BaseCog):
             )
             await ctx.channel.send(embed=error_embd)
             logger.error(f'ERROR OCCURRED while generating wrap for {username}')
+
+    @app_commands.command(name='miniwrapslash', description='Generate a mini wrap!')
+    @app_commands.describe(
+        design='New designs uses colors from your banner/pfp to generate wraps! Old one uses your profile color',
+        token='Your anilist token ( used to verify the user ). It is never stored!',
+    )
+    async def miniwrap(
+        self, interaction: Interaction, design: Literal['New', 'Old'], token: str
+    ) -> None:
+        await self.wrap_queue.put(WrapRequest(token, interaction.user, design))
+
+        await interaction.response.send_message(
+            'You will receive your wrap via DM shortly!', ephemeral=True
+        )
 
 
 async def setup(bot: commands.Bot):

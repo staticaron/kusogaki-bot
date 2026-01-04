@@ -3,7 +3,7 @@ import pdb
 from pathlib import Path
 from typing import List
 
-from discord import Intents, Message
+from discord import Intents, Message, Object
 from discord.ext import commands
 
 logging.basicConfig(level=logging.INFO)
@@ -56,7 +56,7 @@ class KusogakiBot(commands.AutoShardedBot):
             try:
                 cog_path = f'kusogaki_bot.features.{feature_dir.name}.cog'
 
-                if cog_path == "kusogaki_bot.features.guess_the_anime.cog":
+                if cog_path == 'kusogaki_bot.features.guess_the_anime.cog':
                     continue
 
                 await self.load_extension(cog_path)
@@ -69,6 +69,12 @@ class KusogakiBot(commands.AutoShardedBot):
         Setup hook called before the bot starts
         """
         await self.load_cogs()
+
+        TESTING_GUILD = Object(id=1086347813790679120)
+        self.tree.copy_global_to(guild=TESTING_GUILD)
+        await self.tree.sync(guild=TESTING_GUILD)
+
+        logger.info('Slash Commands Synced!')
 
     async def on_ready(self) -> None:
         """

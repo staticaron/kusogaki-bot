@@ -45,10 +45,11 @@ ANCHORS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/anchors.json'
 
 
 class GenerationResponse:
-    def __init__(self, success: bool = True, error_msg: str = ''):
+    def __init__(self, success: bool = True, error_msg: str = '', username=''):
         self.success = success
         self.error_msg = error_msg
         self.image_bytes = bytes()
+        self.username = username
 
 
 class AniWrapService:
@@ -282,6 +283,12 @@ class AniWrapService:
         r, g, b = rgb_tuple[:3]
         return f'#{r:02x}{g:02x}{b:02x}'
 
+    async def hex_to_rgb(self, hex_code: str) -> tuple:
+        """Converts HEX Code to RGB value"""
+
+        hex_code = hex_code.lstrip('#')
+        return tuple(int(hex_code[i : i + 2], 16) for i in (0, 2, 4))
+
     async def load_elements(self, user_data: UserData) -> dict:
         """Insert data into the json for elements"""
 
@@ -310,16 +317,8 @@ class AniWrapService:
         data = json.loads(raw_data)
         return data
 
-    def get_default_colors(self):
-        return [(150, 172, 34), (), (151, 148, 86), (255, 255, 255)]
-
-    async def generate(self, username: str, demo: bool = False) -> GenerationResponse:
-        logger.info(f'Generating Demo Wrap for {username}...')
-
-        if demo:
-            user_data = await fetch_demo_user_data(username)
-        else:
-            user_data = await fetch_user_data(username)
+    async def generate(self, token: str, design: str = 'New') -> GenerationResponse:
+        user_data = await fetch_user_data(token)
 
         if user_data.error:
             return GenerationResponse(False, user_data.error_msg)
@@ -327,65 +326,73 @@ class AniWrapService:
         element_data = await self.load_elements(user_data)
         anchor_data = await self.load_anchors()
 
-        (
-            primary_color_raw,
-            box_color_raw,
-            self.text_color_from_image,
-            self.label_color_from_image,
-        ) = self.get_default_colors()
+        self.primary_color_raw = (11, 22, 34)
+        self.box_color_raw = ()
+        self.text_color_from_image = await self.hex_to_rgb(user_data.profile_color)
+        self.label_color_from_image = self.text_color_from_image
 
-        if user_data.banner_url != '':
+        if design.lower() == 'new' and user_data.banner_url != '':
+            """ If banner is there and colored wrap is requested """
+
             image_response = requests.get(user_data.banner_url)
             banner = Image.open(BytesIO(image_response.content))
             (
-                primary_color_raw,
-                box_color_raw,
+                self.primary_color_raw,
+                self.box_color_raw,
                 self.text_color_from_image,
                 self.label_color_from_image,
             ) = await colors.get_image_colors(banner)
 
-        elif user_data.profile_pic_url != '':
+        elif design.lower() == 'new' and user_data.profile_pic_url != '':
+            """ If banner is not there and colored wrap is requested """
+
             image_response = requests.get(user_data.profile_pic_url)
             banner = Image.open(BytesIO(image_response.content))
             (
-                primary_color_raw,
-                box_color_raw,
+                self.primary_color_raw,
+                self.box_color_raw,
                 self.text_color_from_image,
                 self.label_color_from_image,
             ) = await colors.get_image_colors(banner)
 
+        # hex values from tuple values
         self.label_color_hex = await self.rgb_to_hex(self.label_color_from_image)
         self.text_color_hex = await self.rgb_to_hex(self.text_color_from_image)
 
+        # darker the primary color to mimic the main wrawp without the alpha layering process
         alpha = 200 / 255
         darker_primary_color = (
-            primary_color_raw[0] * alpha,
-            primary_color_raw[1] * alpha,
-            primary_color_raw[2] * alpha,
+            self.primary_color_raw[0] * alpha,
+            self.primary_color_raw[1] * alpha,
+            self.primary_color_raw[2] * alpha,
         )
         self.primary_color = tuple((int(x) for x in darker_primary_color))
         self.primary_color_hex = await self.rgb_to_hex(self.primary_color)
 
         r, g, b = self.primary_color
+
+        # calculate the UNOFFICIAL color which is based on primary color but less saturated and higher brightness
         h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
 
         s = min(max(s - 0.20, 0.0), 1.0)
         v = min(max(v + 0.10, 0.0), 1.0)
 
-        h_l, s_l, v_l = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-
-        s_l = min(max(s_l - 0.20, 0.0), 1.0)
-        v_l = min(max(v_l + 0.20, 0.0), 1.0)
-
         self.box_color = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(h, s, v))
         self.box_color_hex = await self.rgb_to_hex(self.box_color)
+
+        # calculate the ANIME/MANGA color which is based on primary color but less saturated and higher brightness
+        h_l, s_l, v_l = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+
+        s_l = min(max(s_l - 0.40, 0.0), 1.0)
+        v_l = min(max(v_l + 0.30, 0.0), 1.0)
 
         self.l_box_color = tuple(
             int(c * 255) for c in colorsys.hsv_to_rgb(h_l, s_l, v_l)
         )
         self.l_box_color_hex = await self.rgb_to_hex(self.l_box_color)
 
-        bg = colors.apply_color_overlap_image(IMG_WIDTH, IMG_HEIGHT, self.primary_color)
+        # generate the background image and round the corners
+        bg = await self.create_colored_image(IMG_WIDTH, IMG_HEIGHT, self.primary_color)
         bg = await self.apply_rounded_corners(bg, IMG_WIDTH, IMG_HEIGHT, 8)
 
         draw = ImageDraw.ImageDraw(bg)
@@ -525,9 +532,11 @@ class AniWrapService:
 
         response = GenerationResponse()
 
+        # grab binary image data from PIL image
         with BytesIO() as image_binary_container:
             img.save(image_binary_container, 'PNG')
             image_binary_container.seek(0)
             response.image_bytes = image_binary_container.read()
+            response.username = user_data.name
 
         return response

@@ -18,10 +18,11 @@ class KusogakiBot(commands.AutoShardedBot):
     DEFAULT_PREFIX = ['kuso ', 'KUSO ', 'Kuso ']
     FEATURES_DIRECTORY = Path('kusogaki_bot/features')
 
-    def __init__(self) -> None:
+    def __init__(self, is_test: bool = False) -> None:
         intents = Intents.default()
         intents.message_content = True
         intents.members = True
+        self.is_test = is_test
 
         super().__init__(
             command_prefix=self.get_prefix,
@@ -70,16 +71,23 @@ class KusogakiBot(commands.AutoShardedBot):
         """
         await self.load_cogs()
 
-        TESTING_GUILD = Object(id=1086347813790679120)
-        self.tree.copy_global_to(guild=TESTING_GUILD)
-        await self.tree.sync(guild=TESTING_GUILD)
-
-        logger.info('Slash Commands Synced!')
+        # sync app_commands
+        if self.is_test:
+            TESTING_GUILD = Object(id=1086347813790679120)
+            self.tree.copy_global_to(guild=TESTING_GUILD)
+            await self.tree.sync(guild=TESTING_GUILD)
+            logger.info('Slash Commands Synced to Test Server')
+        else:
+            await self.tree.sync()
+            logger.info('Slash Commands Synced Globally')
 
     async def on_ready(self) -> None:
         """
         Called when the bot has successfully connected to Discord
         """
+        if self.is_test:
+            logger.warn('Running in TEST mode!')
+
         logger.info(f'Logged in as {self.user.name}')
         logger.info(f'Bot is in {len(self.guilds)} guilds')
 

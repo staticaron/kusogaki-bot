@@ -80,7 +80,7 @@ async def fetch_user_data(token: str) -> UserData:
     token_response = await get_id_from_token(token)
 
     if token_response.error:
-        return UserData(False, token_response.error_msg)
+        return UserData(True, token_response.error_msg)
 
     user_id = token_response.user_id
 

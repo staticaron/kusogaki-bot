@@ -1,13 +1,10 @@
-import logging
-import pdb
 from pathlib import Path
 from typing import List
 
 from discord import Intents, Message, Object
 from discord.ext import commands
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from kusogaki_bot.shared.services.logger import logger
 
 
 class KusogakiBot(commands.AutoShardedBot):

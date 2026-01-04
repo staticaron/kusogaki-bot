@@ -1,11 +1,8 @@
-import logging
-import pdb
 import sys
 
 import config
 from kusogaki_bot.core.bot import KusogakiBot
-
-logger = logging.getLogger(__name__)
+from kusogaki_bot.shared.services import logger
 
 
 def main():
@@ -23,7 +20,7 @@ def main():
         elif config.TOKEN is not None:
             bot.run(config.TOKEN)
     except Exception as e:
-        logger.critical(f'Failed to start bot: {str(e)}')
+        logger.logger.error(f'Failed to start bot: {str(e)}')
         sys.exit(1)
 
 

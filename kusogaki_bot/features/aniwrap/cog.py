@@ -95,6 +95,15 @@ class AniWrapCog(BaseCog):
             ephemeral=True,
         )
 
+    @commands.has_permissions(administrator=True)
+    @app_commands.command(
+        name='start wrap task', description='Starts the wrap processing task'
+    )
+    async def start_wrap_task(self, interaction: Interaction) -> None:
+        """Restart the wrap processing task"""
+
+        self.task_manager.process_wraps.start()
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AniWrapCog(bot))

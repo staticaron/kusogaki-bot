@@ -5,9 +5,9 @@ from discord import Interaction, app_commands
 from discord.ext import commands
 
 from kusogaki_bot.core import BaseCog, KusogakiBot
-from kusogaki_bot.features.aniwrap.data import MiniWrapMainView
-from kusogaki_bot.features.aniwrap.service import AniWrapService
-from kusogaki_bot.features.aniwrap.task_manager import TaskManager
+from kusogaki_bot.features.miniwrap.data import MiniWrapMainView
+from kusogaki_bot.features.miniwrap.service import AniWrapService
+from kusogaki_bot.features.miniwrap.task_manager import TaskManager
 from kusogaki_bot.shared.services.logger import logger
 from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
 

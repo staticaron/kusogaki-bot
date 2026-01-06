@@ -1,11 +1,10 @@
 import logging
-import pdb
 
 import aiohttp
-import jwt
 
 import config
-from kusogaki_bot.features.aniwrap.query import user_query
+from kusogaki_bot.features.miniwrap.query import user_query
+from kusogaki_bot.shared.utils.token import get_id_from_token
 
 logger = logging.getLogger(__name__)
 
@@ -31,15 +30,6 @@ class UserData:
         self.error_msg = error_msg
 
 
-class TokenResponse:
-    def __init__(
-        self, error: bool = False, error_msg: str = '', user_id: int = 0
-    ) -> None:
-        self.error = error
-        self.error_msg = error_msg
-        self.user_id = user_id
-
-
 async def get_user_id_from_username(username: str) -> str:
     """Hit the anilist api to get userId from username"""
 
@@ -59,17 +49,6 @@ async def get_user_id_from_username(username: str) -> str:
         return ''
 
     return data.get('id', '')
-
-
-async def get_id_from_token(token: str) -> TokenResponse:
-    """Returns the aniList Id from token"""
-
-    try:
-        data = jwt.decode(token, options={'verify_signature': False})
-    except Exception:
-        return TokenResponse(True, 'Invalid Token')
-
-    return TokenResponse(False, '', data['sub'])
 
 
 async def fetch_user_data(token: str) -> UserData:

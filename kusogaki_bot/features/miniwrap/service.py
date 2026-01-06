@@ -1,20 +1,16 @@
 import colorsys
 import json
 import logging
-import os
-import pdb
 from io import BytesIO
 from string import Template
 
 import aiohttp
 import requests
 from PIL import Image, ImageDraw, ImageFont
-from viztracer import VizTracer
 
 import kusogaki_bot.shared.utils.colors as colors
-from kusogaki_bot.features.aniwrap.fetch_data import (
+from kusogaki_bot.features.miniwrap.fetch_data import (
     UserData,
-    fetch_demo_user_data,
     fetch_user_data,
 )
 
@@ -40,8 +36,8 @@ FONT_LOCATION = {
 WRAP_BACKGROUND = 'static/wrap_background.png'
 NO_DATA_IMG = 'static/nodata.png'
 
-ELEMENTS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/elements.json'
-ANCHORS_FILE_LOCATION = 'kusogaki_bot/features/aniwrap/data/anchors.json'
+ELEMENTS_FILE_LOCATION = 'kusogaki_bot/features/miniwrap/data/elements.json'
+ANCHORS_FILE_LOCATION = 'kusogaki_bot/features/miniwrap/data/anchors.json'
 
 
 class GenerationResponse:

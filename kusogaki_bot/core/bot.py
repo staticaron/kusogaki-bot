@@ -54,7 +54,10 @@ class KusogakiBot(commands.AutoShardedBot):
             try:
                 cog_path = f'kusogaki_bot.features.{feature_dir.name}.cog'
 
-                if cog_path == 'kusogaki_bot.features.guess_the_anime.cog':
+                if (
+                    cog_path == 'kusogaki_bot.features.guess_the_anime.cog'
+                    or cog_path == 'kusogaki_bot.features.food_tracker.cog'
+                ):
                     continue
 
                 await self.load_extension(cog_path)

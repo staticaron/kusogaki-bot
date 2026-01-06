@@ -6,7 +6,7 @@ from discord import File, User
 from discord.ext import tasks
 
 from config import WRAP_LOG_CHANNEL_ID
-from kusogaki_bot.features.aniwrap.service import AniWrapService
+from kusogaki_bot.features.miniwrap.service import AniWrapService
 from kusogaki_bot.shared.services.logger import logger
 from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
 from kusogaki_bot.shared.utils.send_dm import SendDM

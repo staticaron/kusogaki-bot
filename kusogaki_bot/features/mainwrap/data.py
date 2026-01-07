@@ -3,10 +3,7 @@ from enum import Enum
 from discord import ButtonStyle, Interaction, TextStyle
 from discord.ui import Button, Modal, TextInput, View, button
 
-
-class MediaLinkType(Enum):
-    ANIME = 0
-    MANGA = 1
+from kusogaki_bot.shared.utils.link_type import MediaLinkType
 
 
 class MediaLinkInputModal(Modal):

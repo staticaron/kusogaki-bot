@@ -73,7 +73,7 @@ class KusogakiBot(commands.AutoShardedBot):
 
         # sync app_commands
         if self.is_test:
-            TESTING_GUILD = Object(id=1086347813790679120)
+            TESTING_GUILD = Object(id=744954542025736243)
             self.tree.copy_global_to(guild=TESTING_GUILD)
             await self.tree.sync(guild=TESTING_GUILD)
             logger.info('Slash Commands Synced to Test Server')

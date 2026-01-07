@@ -1,8 +1,11 @@
 import pdb
+from os import link
 
 import discord
 from discord import Interaction
 from discord.ui import Modal, View
+
+from kusogaki_bot.shared.utils.link_type import MediaLinkType
 
 
 class TokenInputModal(Modal):
@@ -19,13 +22,38 @@ class TokenInputModal(Modal):
     )
 
     async def on_submit(self, interaction: Interaction) -> None:
-        await interaction.response.send_message(
-            'You will receive your wrap in DMs shortly!', ephemeral=True
-        )
+        await interaction.response.defer()
         await self.submit_callback(interaction, self.design, self.token.value)
 
 
-class MiniWrapMainView(View):
+class LinkInputModal(Modal):
+    def __init__(self, submit_callback) -> None:
+        super().__init__(title='Link Input')
+        self.submit_callback = submit_callback
+
+    top_anime_url = discord.ui.TextInput(
+        label='Top Anime URL',
+        style=discord.TextStyle.short,
+        placeholder='<link to top anime>',
+        required=False,
+    )
+
+    top_manga_url = discord.ui.TextInput(
+        label='Top Manga URL',
+        style=discord.TextStyle.short,
+        placeholder='<link to top manga>',
+        required=False,
+    )
+
+    async def on_submit(self, interaction: Interaction) -> None:
+        await self.submit_callback(
+            interaction, self.top_anime_url.value, self.top_manga_url.value
+        )
+
+        await interaction.response.defer()
+
+
+class GenerateMiniwrapView(View):
     def __init__(self, submit_callback) -> None:
         super().__init__()
         self.submit_callback = submit_callback
@@ -71,3 +99,29 @@ class MiniWrapMainView(View):
         self.token_btn.disabled = True
 
         await interaction.edit_original_response(view=self)
+
+
+class EditTopMiniwrapView(View):
+    def __init__(self, link_submit_callback, token_submit_callback):
+        super().__init__()
+        self.link_submit_callback = link_submit_callback
+        self.token_submit_callback = token_submit_callback
+
+        link_input_btn = discord.ui.Button(
+            label='Edit..', style=discord.ButtonStyle.gray
+        )
+        link_input_btn.callback = self.link_input_btn_submit
+
+        done_btn = discord.ui.Button(label='Done..', style=discord.ButtonStyle.gray)
+        done_btn.callback = self.done_btn_submit
+
+        self.add_item(link_input_btn)
+        self.add_item(done_btn)
+
+    async def link_input_btn_submit(self, interaction: Interaction) -> None:
+        modal = LinkInputModal(self.link_submit_callback)
+        await interaction.response.send_modal(modal)
+
+    async def done_btn_submit(self, interaction: Interaction) -> None:
+        modal = TokenInputModal(self.token_submit_callback, 'NEW')
+        await interaction.response.send_modal(modal)

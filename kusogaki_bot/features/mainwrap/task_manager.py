@@ -1,6 +1,6 @@
 from asyncio import Queue
 
-from discord import User
+from discord import Member, User
 from discord.ext import tasks
 
 from kusogaki_bot.features.mainwrap.replacemedia import replace_media
@@ -12,9 +12,8 @@ class EditTopTask:
     token: str = ''
     anime_urls = ()
     manga_urls = ()
-    user: User = None
 
-    def __init__(self, token, anime_urls, manga_urls, user: User) -> None:
+    def __init__(self, token, anime_urls, manga_urls, user: User | Member) -> None:
         self.token = token
         self.anime_urls = anime_urls
         self.manga_urls = manga_urls

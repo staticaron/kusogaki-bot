@@ -7,7 +7,6 @@ import aiohttp
 import requests
 from PIL import Image, ImageFilter
 
-
 ANILIST_API = 'https://graphql.anilist.co'
 
 ANIME_POSITIONS = [(412, 305), (518, 340), (597, 340), (676, 340), (755, 340)]

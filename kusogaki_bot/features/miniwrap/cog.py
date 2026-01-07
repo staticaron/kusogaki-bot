@@ -1,15 +1,21 @@
-import os
-
-import discord
+import pdb
 from discord import Interaction, app_commands
 from discord.ext import commands
 
 from kusogaki_bot.core import BaseCog, KusogakiBot
-from kusogaki_bot.features.miniwrap.data import MiniWrapMainView
+from kusogaki_bot.features.miniwrap.data import (
+    GenerateMiniwrapView,
+    EditTopMiniwrapView,
+)
 from kusogaki_bot.features.miniwrap.service import AniWrapService
 from kusogaki_bot.features.miniwrap.task_manager import TaskManager
 from kusogaki_bot.shared.services.logger import logger
 from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
+
+
+@app_commands.guild_only()
+class MiniWrapGroup(app_commands.Group):
+    pass
 
 
 class WrapRequest:
@@ -20,6 +26,8 @@ class WrapRequest:
 
 
 class AniWrapCog(BaseCog):
+    miniwrapgroup = MiniWrapGroup(name='miniwrap')
+
     def __init__(self, bot: KusogakiBot):
         super().__init__(bot)
         self.bot = bot
@@ -29,40 +37,8 @@ class AniWrapCog(BaseCog):
     async def cog_unload(self):
         self.task_manager.process_wraps.cancel()
 
-    @commands.has_permissions(administrator=True)
-    @commands.hybrid_command(
-        name='dummywrap',
-        aliases=['dw'],
-        description='Generate a dummy wrap without making API calls to kusogaki',
-    )
-    async def send_dummy_wrap(self, ctx: commands.Context, username: str):
-        """
-        Send a Dummy Wrap without making a call to API
-        Doesn't hit kusogaki api
-        Doesn't hit anilist api
-        Just for Image Generation Testing
-        """
-
-        await ctx.typing()
-
-        response = await self.service.generate(username, 'd')
-
-        if response.success:
-            wrap_file = discord.File(f'wraps/{username}.png')
-
-            await ctx.channel.send(file=wrap_file)
-            logger.info(f'Wrap Generated for : {username}')
-
-            os.remove(f'wraps/{username}.png')
-        else:
-            error_embd, _ = await get_embed(
-                EmbedType.ERROR, 'ERROR!', response.error_msg
-            )
-            await ctx.channel.send(embed=error_embd)
-            logger.error(f'ERROR OCCURRED while generating wrap for {username}')
-
-    @app_commands.command(name='miniwrap', description='Generate a mini wrap!')
-    async def miniwrap(self, interaction: Interaction) -> None:
+    @miniwrapgroup.command(name='generate', description='Generate a Mini Wrap')
+    async def miniwrap_generate(self, interaction: Interaction) -> None:
         """
         Send a View that will receive the style and token info using Modals sent after the view
         """
@@ -82,7 +58,9 @@ class AniWrapCog(BaseCog):
             if not self.task_manager.process_wraps.is_running():
                 self.task_manager.process_wraps.start()
 
-        view = MiniWrapMainView(submit_callback)
+            await interaction.followup.send('You will receive your wrap in DMS soon')
+
+        view = GenerateMiniwrapView(submit_callback)
         embd, _ = await get_embed(
             EmbedType.NORMAL,
             'Pick Design',
@@ -96,13 +74,51 @@ class AniWrapCog(BaseCog):
         )
 
     @commands.has_permissions(administrator=True)
-    @app_commands.command(
+    @miniwrapgroup.command(
         name='start_wrap_task', description='Starts the wrap processing task'
     )
-    async def start_wrap_task(self, interaction: Interaction) -> None:
+    async def miniwrap_start_task(self, interaction: Interaction) -> None:
         """Restart the wrap processing task"""
 
         self.task_manager.process_wraps.start()
+
+    @miniwrapgroup.command(
+        name='edittop', description='Edit the TOP Anime/Manga of your mini wrap'
+    )
+    async def miniwrap_edittop(self, interaction: Interaction) -> None:
+        anime_url = ''
+        manga_url = ''
+
+        async def link_modal_submit_callback(
+            interaction: Interaction, anime, manga
+        ) -> None:
+            """Runs when the link input modal is submitted"""
+
+            nonlocal anime_url, manga_url
+
+            anime_url = anime
+            manga_url = manga
+
+        async def token_submit_callback(
+            interaction: Interaction,
+            design,
+            token,
+        ) -> None:
+            """Runs when the token modal is submitted"""
+
+            nonlocal anime_url, manga_url
+
+            logger.info('TOKEN', token)
+            logger.info('ANIME', anime_url)
+            logger.info('MANGA', manga_url)
+
+            pdb.set_trace()
+
+            await interaction.response.send_message('Updates will be applied!')
+
+        view = EditTopMiniwrapView(link_modal_submit_callback, token_submit_callback)
+
+        await interaction.response.send_message('Edit TOP Anime/Manga', view=view)
 
 
 async def setup(bot: commands.Bot):

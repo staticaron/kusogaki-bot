@@ -1,6 +1,4 @@
-import pdb
 from enum import Enum
-from os import link
 
 from discord import ButtonStyle, Interaction, TextStyle
 from discord.ui import Button, Modal, TextInput, View, button
@@ -95,5 +93,4 @@ class EditTopView(View):
 
     @button(label='DONE', style=ButtonStyle.green)
     async def submit_btn(self, interaction: Interaction, btn: Button) -> None:
-        pdb.set_trace()
-        await self.view_submit_callback()
+        await self.view_submit_callback(interaction)

@@ -5,7 +5,7 @@ from discord import Interaction
 from discord.ui import Modal, View
 
 
-class MiniWrapInputModal(Modal):
+class TokenInputModal(Modal):
     def __init__(self, submit_callback, design: str = 'NEW') -> None:
         super().__init__(title='Mini Wrap Input')
         self.submit_callback = submit_callback
@@ -60,7 +60,7 @@ class MiniWrapMainView(View):
         self.add_item(self.token_btn)
 
     async def token_btn_callback(self, interaction: Interaction) -> None:
-        token_input_modal = MiniWrapInputModal(
+        token_input_modal = TokenInputModal(
             self.submit_callback,
             self.select.values[0] if len(self.select.values) > 0 else 'NEW',
         )

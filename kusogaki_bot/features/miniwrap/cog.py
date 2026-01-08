@@ -1,11 +1,12 @@
 import pdb
-from discord import Interaction, app_commands
+
+from discord import Interaction, Permissions, app_commands
 from discord.ext import commands
 
 from kusogaki_bot.core import BaseCog, KusogakiBot
 from kusogaki_bot.features.miniwrap.data import (
-    GenerateMiniwrapView,
     EditTopMiniwrapView,
+    GenerateMiniwrapView,
 )
 from kusogaki_bot.features.miniwrap.service import AniWrapService
 from kusogaki_bot.features.miniwrap.task_manager import TaskManager
@@ -26,7 +27,11 @@ class WrapRequest:
 
 
 class AniWrapCog(BaseCog):
-    miniwrapgroup = MiniWrapGroup(name='miniwrap')
+    miniwrapgroup = MiniWrapGroup(
+        name='miniwrap',
+        description='Holder for commands related to miniwrap',
+        default_permissions=Permissions(administrator=True),
+    )
 
     def __init__(self, bot: KusogakiBot):
         super().__init__(bot)

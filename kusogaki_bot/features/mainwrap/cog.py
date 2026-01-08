@@ -63,6 +63,10 @@ class MainWrapCog(commands.Cog):
                 if not self.task_manager.process_edit_top.is_running():
                     self.task_manager.process_edit_top.start()
 
+                await interaction.followup.send(
+                    'Changes will be applied automatically!'
+                )
+
             async def token_btn_callback(interaction: Interaction) -> None:
                 """
                 Runs when the Token button is pressed

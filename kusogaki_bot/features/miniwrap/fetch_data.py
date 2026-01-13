@@ -1,9 +1,10 @@
 import logging
+import re
 
 import aiohttp
 
 import config
-from kusogaki_bot.features.miniwrap.query import user_query
+from kusogaki_bot.features.miniwrap.query import media_image_query, user_query
 from kusogaki_bot.shared.utils.token import get_id_from_token
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,14 @@ class UserData:
     def __init__(self, error: bool = False, error_msg: str = ''):
         self.error = error
         self.error_msg = error_msg
+
+
+def parse_media_id(source: str) -> int | None:
+    """Extract media ID"""
+    if source.isdigit():
+        return int(source)
+    match = re.search(r'anilist\.co/(?:anime|manga)/(\d+)', source)
+    return int(match.group(1)) if match else None
 
 
 async def get_user_id_from_username(username: str) -> str:
@@ -130,6 +139,38 @@ async def fetch_user_data(token: str) -> UserData:
         user_data.error = True
         user_data.error_msg = f'Error occurred: ```{err}```'
         return user_data
+
+
+async def fetch_img_url_from_media_url(media_url) -> str | None:
+    """
+    Returns the Media Thumbnail Image URL from Media URL
+    """
+
+    try:
+        mediaID = parse_media_id(media_url)
+    except Exception:
+        return None
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url=config.ANILIST_BASE or '',
+                json={
+                    'query': media_image_query,
+                    'variables': {'mediaID': mediaID},
+                },
+            ) as response:
+                response_json = await response.json()
+
+        data = response_json.get('data', None)
+
+        if data is None:
+            return None
+
+        return data.get('Media', {}).get('coverImage', {}).get('large', None)
+
+    except Exception:
+        return None
 
 
 async def fetch_demo_user_data(username: str) -> UserData:

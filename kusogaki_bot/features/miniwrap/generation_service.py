@@ -9,6 +9,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 
 import kusogaki_bot.shared.utils.colors as colors
+from kusogaki_bot.features.miniwrap.data import WrapRequest
 from kusogaki_bot.features.miniwrap.fetch_data import (
     UserData,
     fetch_user_data,
@@ -313,8 +314,8 @@ class AniWrapService:
         data = json.loads(raw_data)
         return data
 
-    async def generate(self, token: str, design: str = 'New') -> GenerationResponse:
-        user_data = await fetch_user_data(token)
+    async def generate(self, generation_request: WrapRequest) -> GenerationResponse:
+        user_data = await fetch_user_data(generation_request.token)
 
         if user_data.error:
             return GenerationResponse(False, user_data.error_msg)
@@ -327,7 +328,7 @@ class AniWrapService:
         self.text_color_from_image = await self.hex_to_rgb(user_data.profile_color)
         self.label_color_from_image = self.text_color_from_image
 
-        if design.lower() == 'new' and user_data.banner_url != '':
+        if generation_request.wt.lower() == 'new' and user_data.banner_url != '':
             """ If banner is there and colored wrap is requested """
 
             image_response = requests.get(user_data.banner_url)
@@ -339,7 +340,7 @@ class AniWrapService:
                 self.label_color_from_image,
             ) = await colors.get_image_colors(banner)
 
-        elif design.lower() == 'new' and user_data.profile_pic_url != '':
+        elif generation_request.wt.lower() == 'new' and user_data.profile_pic_url != '':
             """ If banner is not there and colored wrap is requested """
 
             image_response = requests.get(user_data.profile_pic_url)
@@ -414,7 +415,7 @@ class AniWrapService:
         )
         await self.render_image(
             bg,
-            user_data.anime_img_url,
+            generation_request.anime_url or user_data.anime_img_url,
             anchor_data,
             element_data,
             element_data['anime_img'],
@@ -458,7 +459,7 @@ class AniWrapService:
         )
         await self.render_image(
             bg,
-            user_data.manga_img_url,
+            generation_request.manga_url or user_data.manga_img_url,
             anchor_data,
             element_data,
             element_data['manga_img'],

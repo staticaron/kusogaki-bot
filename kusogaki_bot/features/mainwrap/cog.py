@@ -1,11 +1,12 @@
 import discord
-from discord import Interaction, app_commands, user
+from discord import Interaction, app_commands
 from discord.ext import commands
 
 from kusogaki_bot.features.mainwrap.data import EditTopView, MediaLinkType
 from kusogaki_bot.features.mainwrap.task_manager import EditTopTask, EditTopTaskManager
 from kusogaki_bot.features.miniwrap.data import TokenInputModal
 from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
+from kusogaki_bot.shared.views.token_input_modal import TokenInputView
 
 
 class MainWrapGroup(app_commands.Group):
@@ -45,7 +46,7 @@ class MainWrapCog(commands.Cog):
             """Runs when the submit button on view is pressed"""
 
             async def token_submit_callback(
-                interaction: Interaction, design: str, token: str
+                interaction: Interaction, token: str
             ) -> None:
                 """
                 Runs when the token input modal is submitted!
@@ -67,24 +68,7 @@ class MainWrapCog(commands.Cog):
                     'Changes will be applied automatically!'
                 )
 
-            async def token_btn_callback(interaction: Interaction) -> None:
-                """
-                Runs when the Token button is pressed
-                Responsible for sending the token input modal
-                """
-
-                token_input_modal = TokenInputModal(token_submit_callback, 'NEW')
-                await interaction.response.send_modal(token_input_modal)
-                self.token_btn.disabled = True
-                await interaction.edit_original_response(view=token_view)
-
-            self.token_btn = discord.ui.Button(
-                style=discord.ButtonStyle.gray, label='Enter Token'
-            )
-            self.token_btn.callback = token_btn_callback
-
-            token_view = discord.ui.View()
-            token_view.add_item(self.token_btn)
+            token_view = TokenInputView(token_submit_callback)
 
             embd, _ = await get_embed(
                 EmbedType.NORMAL,

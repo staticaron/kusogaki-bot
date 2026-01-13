@@ -6,3 +6,13 @@ query($username: String){
   }
 }
 """
+
+media_image_query = """
+query ($mediaID: Int) {
+  Media(id: $mediaID) {
+    coverImage {
+      large
+    }
+  }
+}
+"""

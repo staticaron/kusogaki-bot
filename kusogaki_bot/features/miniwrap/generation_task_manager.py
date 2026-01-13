@@ -6,7 +6,8 @@ from discord import File, User
 from discord.ext import tasks
 
 from config import WRAP_LOG_CHANNEL_ID
-from kusogaki_bot.features.miniwrap.service import AniWrapService
+from kusogaki_bot.features.miniwrap.data import WrapRequest
+from kusogaki_bot.features.miniwrap.generation_service import AniWrapService
 from kusogaki_bot.shared.services.logger import logger
 from kusogaki_bot.shared.utils.embeds import EmbedType, get_embed
 from kusogaki_bot.shared.utils.send_dm import SendDM
@@ -22,6 +23,17 @@ class TaskManager:
         self.service = AniWrapService()
         self.wrap_channel_logger = SendLogInLogChannel(self.bot)
         self.send_dm = SendDM()
+
+    async def add_to_queue(self, wrap_request: WrapRequest) -> None:
+        """
+        Add to wrap generation Queue
+        Starts the Task if not running
+        """
+
+        await self.wrap_queue.put(wrap_request)
+
+        if not self.process_wraps.is_running():
+            self.process_wraps.start()
 
     @tasks.loop(seconds=5)
     async def process_wraps(self) -> None:
@@ -41,15 +53,13 @@ class TaskManager:
         self.is_processing = True
 
         request = await self.wrap_queue.get()
-        token = request.token
         user: User = request.user
-        wt = request.wt
 
         # timer to get wrap generation time
         t0 = time.time()
 
         # raw image binary data from wrap generation logic
-        response = await self.service.generate(token, wt)
+        response = await self.service.generate(request)
 
         if response.success:
             with BytesIO(response.image_bytes) as img_binary:

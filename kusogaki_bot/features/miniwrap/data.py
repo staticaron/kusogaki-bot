@@ -1,32 +1,31 @@
-import pdb
-from os import link
-
 import discord
 from discord import Interaction
 from discord.ui import Modal, View
 
-from kusogaki_bot.shared.utils.link_type import MediaLinkType
+from kusogaki_bot.shared.views.token_input_modal import TokenInputModal
 
 
-class TokenInputModal(Modal):
-    def __init__(self, submit_callback, design: str = 'NEW') -> None:
-        super().__init__(title='Mini Wrap Input')
-        self.submit_callback = submit_callback
-        self.design = design
-
-    token = discord.ui.TextInput(
-        label='Anilist Token',
-        style=discord.TextStyle.paragraph,
-        placeholder='<paste token here>',
-        required=True,
-    )
-
-    async def on_submit(self, interaction: Interaction) -> None:
-        await interaction.response.defer()
-        await self.submit_callback(interaction, self.design, self.token.value)
+class WrapRequest:
+    def __init__(
+        self,
+        token,
+        user,
+        wt,
+        anime_url: str | None = None,
+        manga_url: str | None = None,
+    ) -> None:
+        self.token = token
+        self.user = user
+        self.wt = wt
+        self.anime_url = anime_url
+        self.manga_url = manga_url
 
 
 class LinkInputModal(Modal):
+    """
+    Modal for accepting top anime and top manga URL
+    """
+
     def __init__(self, submit_callback) -> None:
         super().__init__(title='Link Input')
         self.submit_callback = submit_callback
@@ -46,11 +45,11 @@ class LinkInputModal(Modal):
     )
 
     async def on_submit(self, interaction: Interaction) -> None:
+        await interaction.response.defer()
+
         await self.submit_callback(
             interaction, self.top_anime_url.value, self.top_manga_url.value
         )
-
-        await interaction.response.defer()
 
 
 class GenerateMiniwrapView(View):
@@ -88,10 +87,7 @@ class GenerateMiniwrapView(View):
         self.add_item(self.token_btn)
 
     async def token_btn_callback(self, interaction: Interaction) -> None:
-        token_input_modal = TokenInputModal(
-            self.submit_callback,
-            self.select.values[0] if len(self.select.values) > 0 else 'NEW',
-        )
+        token_input_modal = TokenInputModal(self.submit_callback)
 
         await interaction.response.send_modal(token_input_modal)
 
@@ -102,17 +98,15 @@ class GenerateMiniwrapView(View):
 
 
 class EditTopMiniwrapView(View):
-    def __init__(self, link_submit_callback, token_submit_callback):
+    def __init__(self, link_submit_callback, done_callback):
         super().__init__()
         self.link_submit_callback = link_submit_callback
-        self.token_submit_callback = token_submit_callback
+        self.done_callback = done_callback
 
-        link_input_btn = discord.ui.Button(
-            label='Edit..', style=discord.ButtonStyle.gray
-        )
+        link_input_btn = discord.ui.Button(label='EDIT', style=discord.ButtonStyle.gray)
         link_input_btn.callback = self.link_input_btn_submit
 
-        done_btn = discord.ui.Button(label='Done..', style=discord.ButtonStyle.gray)
+        done_btn = discord.ui.Button(label='DONE', style=discord.ButtonStyle.green)
         done_btn.callback = self.done_btn_submit
 
         self.add_item(link_input_btn)
@@ -123,5 +117,5 @@ class EditTopMiniwrapView(View):
         await interaction.response.send_modal(modal)
 
     async def done_btn_submit(self, interaction: Interaction) -> None:
-        modal = TokenInputModal(self.token_submit_callback, 'NEW')
-        await interaction.response.send_modal(modal)
+        await interaction.response.defer()
+        await self.done_callback(interaction)
